@@ -1,0 +1,17 @@
+spring:
+  ai:
+    chat:
+      observations:
+        log-completion: true
+    ollama:
+      base-url: http://192.168.178.87:11434
+      chat:
+        model: gpt-oss:20b
+      init:
+        pull-model-strategy: always
+        timeout: 360s
+        max-retries: 1
+        chat:
+          additional-models:
+          - granite3-dense:8b
+          - granite3.2-vision
