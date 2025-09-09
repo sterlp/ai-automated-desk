@@ -13,6 +13,7 @@ import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.pdfbox.tools.PDFText2HTML;
 
 import lombok.RequiredArgsConstructor;
 
@@ -44,10 +45,10 @@ public class PdfDocument implements Closeable {
     }
     
     public String readText() {
-        PDFTextStripper stripper = new PDFTextStripper();
-        stripper.setStartPage(1);
-        stripper.setEndPage(getNumberOfPages() + 1);
         try {
+            var stripper = new PDFText2HTML();
+            stripper.setStartPage(1);
+            stripper.setEndPage(getNumberOfPages() + 1);
             return stripper.getText(document).trim();
         } catch (IOException e) {
             throw new RuntimeException(e);

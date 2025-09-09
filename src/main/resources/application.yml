@@ -9,9 +9,10 @@ spring:
         model: gpt-oss:20b
       init:
         pull-model-strategy: always
-        timeout: 360s
+        timeout: 300s
         max-retries: 1
         chat:
           additional-models:
-          - granite3-dense:8b
+          - gpt-oss:20b
+          # - granite3-dense:8b
           - granite3.2-vision

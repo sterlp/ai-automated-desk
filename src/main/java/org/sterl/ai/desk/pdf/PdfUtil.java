@@ -12,9 +12,11 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.springframework.ai.content.Media;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.util.MimeTypeUtils;
 
 public class PdfUtil {
 
@@ -42,5 +44,18 @@ public class PdfUtil {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static Media toMedia(BufferedImage img) {
+       return new Media(MimeTypeUtils.IMAGE_PNG, PdfUtil.image2Resource(img));
+    }
+
+    public static List<Media> toMedia(PdfDocument doc) {
+        var media = new ArrayList<Media>();
+        for (int i = 0; i < doc.getNumberOfPages(); i++) {
+            media.add(new Media(MimeTypeUtils.IMAGE_PNG, 
+                    PdfUtil.image2Resource(doc.getPageAsImage(i))));
+        }
+        return media;
     }
 }

@@ -1,13 +1,19 @@
 package org.sterl.ai.desk.summarise;
 
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MimeTypeUtils;
+import org.sterl.ai.desk.pdf.PdfUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,30 +22,55 @@ import lombok.RequiredArgsConstructor;
 public class SummariseService {
 
     private final OllamaChatModel ollamaChat;
+    private final DocumentConverter documentConverter;
     
-    public String summarise(String text) {
-        var message = UserMessage.builder().text(text).build();
+    public DocumentInfo summarise(String text) {
         var system = SystemMessage.builder().text("""
-                You are an AI specialized in document information extraction. Your task is to carefully analyze text documents (such as letters, invoices, reminders, delivery notes, insurance statements, settlements, etc.) and extract the key elements. 
-                Always return results in a structured JSON RFC 8259 format as one JSON Object.
-                Use the language of the text.
-                Specifically, identify and extract the following fields if present:
-                - from: The sender’s or issuing company/organization name.
-                - to:   The receiver’s company/organization name.
-                - date: The date of the letter or document (use ISO format: YYYY-MM-DD if possible).
-                - document_type: The type of document (e.g., Rechnung, Mahnung, Lieferschein, Abrechnung, Versicherungsrechnung, etc.).
-                - document_number: Any invoice number, reference number, policy number, or other identifier.
-                - other_relevant_info: Any additional key information that may be useful (e.g., customer number, contract number, claim number).
-                - reason: For what reason this document was sent, e.g. Vertrag, Kreditvertrag, Kaufvertrag, Rechnung
-                - abstract: one short sentence, which summerizes the document in the most exact way.
-                If a field is not available in the text, return it with the value null. 
-                """).build();
+                You are an AI specialized in document information extraction. 
+                Your task is to carefully analyze text documents (such as letters, invoices, reminders, delivery notes, insurance statements, settlements, etc.) and extract the key elements. 
+                Use the language of the given text by the user for the result.
+                """ + documentConverter.getFormat()
+                ).build();
+        var message = UserMessage.builder().text(text).build();
         var prompt = new Prompt(Arrays.asList(system, message),
                 OllamaOptions.builder()
-                    .model("granite3-dense:8b") // granite3-dense:granite3-dense:8b - gpt-oss:20b
+                    .model("gpt-oss:20b") // granite3-dense:8b - gpt-oss:20b
                     .build());
         
-        System.err.println("Summerize Text");
+        System.err.println("Summerize Text:\n" + text);
+            
+
+        var resutText = ollamaChat.call(prompt)
+                .getResult()
+                .getOutput()
+                .getText();
+        
+        return documentConverter.convert(resutText);
+    }
+    
+    /**
+     * Currently very bad results
+     */
+    public String readPdfAi(List<BufferedImage> images) {
+        var media = new ArrayList<Media>();
+        for (var i : images) {
+            media.add(new Media(MimeTypeUtils.IMAGE_PNG, PdfUtil.image2Resource(i)));
+        }
+
+        var message = UserMessage.builder()
+                .text("""
+              You are an AI specialized in document information extraction. 
+              Your task is to carefully analyze documents (such as letters, invoices, reminders, delivery notes, insurance statements, settlements, etc.) and extract the key elements. 
+              Use the language of the text. Try to find for for each field the correct information. Verify your result before returning it.
+              """ + documentConverter.getFormat())
+                .media(media)
+                .build();
+        var prompt = new Prompt(message,
+                OllamaOptions.builder()
+                .model("granite3.2-vision")
+                .build());
+        
+        System.err.println("Reading PDF AI");
         // TODO error handling
         return ollamaChat.call(prompt).getResult().toString();
     }
