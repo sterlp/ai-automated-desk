@@ -21,19 +21,21 @@ import org.springframework.util.MimeTypeUtils;
 public class PdfUtil {
 
     public static List<BufferedImage> generateImages(ClassPathResource pdfResource, int dpi) {
-        var imageResources = new ArrayList<BufferedImage>();
-
-        try (PDDocument document =  Loader.loadPDF(pdfResource.getContentAsByteArray())) {
-            var renderer = new PDFRenderer(document);
-
-            for (int page = 0; page < document.getNumberOfPages(); ++page) {
-                var bim = renderer.renderImageWithDPI(page, dpi, ImageType.RGB);
-                imageResources.add(bim);
-            }
+        try (var document = Loader.loadPDF(pdfResource.getContentAsByteArray())) {
+            return pdfToPng(document, dpi);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    public static List<BufferedImage> pdfToPng(PDDocument document, int dpi) throws IOException {
+        var renderer = new PDFRenderer(document);
+        var imageResources = new ArrayList<BufferedImage>();
 
+        for (int page = 0; page < document.getNumberOfPages(); ++page) {
+            var bim = renderer.renderImageWithDPI(page, dpi, ImageType.RGB);
+            imageResources.add(bim);
+        }
         return imageResources;
     }
 

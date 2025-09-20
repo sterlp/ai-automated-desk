@@ -2,6 +2,8 @@ package org.sterl.ai.desk.pdf;
 
 import java.awt.image.BufferedImage;
 import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -13,7 +15,7 @@ import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
-import org.apache.pdfbox.tools.PDFText2HTML;
+import org.springframework.lang.NonNull;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,9 +24,18 @@ public class PdfDocument implements Closeable {
     
     private final PDDocument document;
     private final PDFRenderer renderer;
+    
+    public PdfDocument(File file) {
+        try (var s = new FileInputStream(file)) {
+            document =  Loader.loadPDF(new RandomAccessReadBuffer(s));
+            renderer = new PDFRenderer(document);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public PdfDocument(InputStream doc) {
-        try {
+        try (doc) {
             document =  Loader.loadPDF(new RandomAccessReadBuffer(doc));
             renderer = new PDFRenderer(document);
         } catch (IOException e) {
@@ -44,9 +55,10 @@ public class PdfDocument implements Closeable {
         }
     }
     
+    @NonNull
     public String readText() {
         try {
-            var stripper = new PDFText2HTML();
+            var stripper = new PDFTextStripper();
             stripper.setStartPage(1);
             stripper.setEndPage(getNumberOfPages() + 1);
             return stripper.getText(document).trim();

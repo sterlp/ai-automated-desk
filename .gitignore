@@ -3,8 +3,10 @@ target/
 dist/
 node_modules/
 
-**/src/**/local/
-**/src/**/private/
+src/**/local/
+src/**/private/
+src/**/local/**
+src/**/private/**
 
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

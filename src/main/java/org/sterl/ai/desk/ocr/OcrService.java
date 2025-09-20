@@ -2,10 +2,13 @@ package org.sterl.ai.desk.ocr;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.stream.Collectors;
 
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.sterl.ai.desk.pdf.PdfDocument;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +17,43 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class OcrService {
+    
+    private String docker = "/usr/local/bin/docker";
 
-    public record ReadFile (File out, String message) {};
+    public record ReadFile (File out, boolean ocrDone, @Nullable String message) {
+        public long size() {
+            return out.length();
+        }
+    }
+    
+    public ReadFile ocrPdfIfNeeded(File inPdf) {
+        try (var pdf = new PdfDocument(new FileInputStream(inPdf))) {
+            var txt = pdf.readText();
+            if (txt.length() < 10) {
+                return ocrAndReplacePdf(inPdf);
+            }
+            return new ReadFile(inPdf, false, null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public ReadFile ocrAndReplacePdf(File inPdf) {
+        var ocredPdf = ocrPdf(inPdf);
+        if (ocredPdf.size() > 0) {
+            inPdf.delete();
+            if (ocredPdf.out().renameTo(inPdf)) {
+                return new ReadFile(inPdf, true, ocredPdf.message());
+            } else {
+                log.warn("Failed to rename {}", ocredPdf.out().getAbsolutePath());
+                return ocredPdf;
+            }
+        } else {
+            log.warn("Failed to OCR {}", inPdf.getAbsolutePath());
+            ocredPdf.out().delete();
+            return new ReadFile(inPdf, false, "OCR result is empty:\n" + ocredPdf.message());
+        }
+    }
     
     public ReadFile ocrPdf(File file) {
 
@@ -30,13 +68,13 @@ public class OcrService {
         }
         
         var pb = new ProcessBuilder(
-                "docker", "run", "-i", "--rm",
-                "jbarlow83/ocrmypdf",
+                docker, "run", "-i", "--rm",
+                "jbarlow83/ocrmypdf-alpine",
                 "--force-ocr", "-l", "deu", "-", "-"
         );
-        
+
         var output = new File(directory + fileName + ".ocr");
-        String errorOutput = "";
+        var errorOutput = "";
         try {
             output.createNewFile();
             pb.redirectInput(file);
@@ -52,8 +90,8 @@ public class OcrService {
                 throw new RuntimeException("Failed to OCR + " + file.getAbsolutePath() + ":\n" + errorOutput);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to OCR + " + file.getAbsolutePath() + ":\n" + errorOutput, e);
+            throw new RuntimeException("Failed to OCR " + file.getAbsolutePath() + ":\n" + errorOutput, e);
         }
-        return new ReadFile(output, errorOutput);
+        return new ReadFile(output, true, errorOutput);
     }
 }

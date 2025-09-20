@@ -33,11 +33,11 @@ public class SummariseService {
                 ).build();
         var message = UserMessage.builder().text(text).build();
         var prompt = new Prompt(Arrays.asList(system, message),
-                OllamaOptions.builder()
-                    .model("gpt-oss:20b") // granite3-dense:8b - gpt-oss:20b
+                OllamaOptions.builder().format("json")
+                    //.model("gpt-oss:20b") // gemma3:4b granite3-dense:8b - gpt-oss:20b
                     .build());
         
-        System.err.println("Summerize Text:\n" + text);
+        // System.err.println("Summerize Text:\n" + text);
             
 
         var resutText = ollamaChat.call(prompt)
@@ -51,7 +51,7 @@ public class SummariseService {
     /**
      * Currently very bad results
      */
-    public String readPdfAi(List<BufferedImage> images) {
+    public DocumentInfo summarise(List<BufferedImage> images) {
         var media = new ArrayList<Media>();
         for (var i : images) {
             media.add(new Media(MimeTypeUtils.IMAGE_PNG, PdfUtil.image2Resource(i)));
@@ -67,11 +67,16 @@ public class SummariseService {
                 .build();
         var prompt = new Prompt(message,
                 OllamaOptions.builder()
-                .model("granite3.2-vision")
-                .build());
+                    .format("json")
+                    .model("granite3.2-vision")
+                    .build());
         
         System.err.println("Reading PDF AI");
-        // TODO error handling
-        return ollamaChat.call(prompt).getResult().toString();
+        var resutText = ollamaChat.call(prompt)
+                .getResult()
+                .getOutput()
+                .getText();
+
+        return documentConverter.convert(resutText);
     }
 }
