@@ -64,7 +64,11 @@ public class FileNameService {
         try (var pdf = new PdfDocument(new FileInputStream(ocrPdf.out()))) {
             var fileMetaData = summariseService.summarise(pdf.readText());
             var resultFile = new File(destinationDir + File.separatorChar + fileMetaData.toFileName() + ".pdf");
-            FileUtils.moveFile(ocrPdf.out(), resultFile);
+            if (resultFile.getName().length() < 4) {
+                log.warn("Failed to generate name for {} - result was {}", inPdf.getName(), fileMetaData);
+            } else {
+                FileUtils.moveFile(ocrPdf.out(), resultFile);
+            }
             log.info("Finished {} and moved to {}", inPdf.getName(), resultFile.getAbsolutePath());
         } catch (Exception e) {
             log.error("Failed to process {}", inPdf.getAbsolutePath(), e);

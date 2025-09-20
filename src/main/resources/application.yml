@@ -8,7 +8,7 @@ spring:
       chat:
         options:
           format: json
-        model: granite3.3:8b # gemma3:4b # gpt-oss:20b
+        model: llama3.1 # granite3.3:8b # gemma3:4b # gpt-oss:20b
       init:
         pull-model-strategy: always
         timeout: 300s

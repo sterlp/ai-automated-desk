@@ -1,9 +1,7 @@
 package org.sterl.ai.desk.summarise;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.IOException;
 import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;

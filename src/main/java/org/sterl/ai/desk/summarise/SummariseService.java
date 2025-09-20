@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SummariseService {
 
+    private final int maxTextLength = 4 * 1000;
     private final OllamaChatModel ollamaChat;
     private final DocumentConverter documentConverter;
     
@@ -31,21 +32,24 @@ public class SummariseService {
                 Use the language of the given text by the user for the result.
                 """ + documentConverter.getFormat()
                 ).build();
+        
+        // shorten text to the given token count
+        if (text.length() > maxTextLength) text = text.substring(0, maxTextLength);
+        
         var message = UserMessage.builder().text(text).build();
         var prompt = new Prompt(Arrays.asList(system, message),
-                OllamaOptions.builder().format("json")
+                OllamaOptions.builder()
+                    .format("json")
                     //.model("gpt-oss:20b") // gemma3:4b granite3-dense:8b - gpt-oss:20b
                     .build());
         
         // System.err.println("Summerize Text:\n" + text);
             
 
-        var resutText = ollamaChat.call(prompt)
-                .getResult()
-                .getOutput()
-                .getText();
-        
-        return documentConverter.convert(resutText);
+        var resut = ollamaChat.call(prompt).getResult();
+
+        System.err.println(resut);
+        return documentConverter.convert(resut.getOutput().getText());
     }
     
     /**

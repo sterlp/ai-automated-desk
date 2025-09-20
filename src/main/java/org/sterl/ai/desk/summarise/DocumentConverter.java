@@ -28,15 +28,22 @@ public class DocumentConverter implements StructuredOutputConverter<DocumentInfo
                 Do not include any explanations.
                 Only provide a RFC8259 compliant JSON response following this format without deviation.
                 The data structure for the JSON object should match this Java class "DocumentInfo" with the properties:
-                {
-                 from:          The sender's or issuing company/organization name. never a number alone, but may contain a number in the zip.
-                 to:            The receiver’s company/organization name. never a number alone, but may contain a number in the zip.
-                 date:          The date of the letter or document (use ISO format as Java LocalDate: YYYY-MM-DD).
-                 documentType:  The type of document (e.g., Rechnung, Mahnung, Lieferschein, Abrechnung, Versicherungsrechnung, etc.), or any other type
-                 documentNumber:Any invoice number, reference number, policy number, rechnungsnummer, Rechnung Nr., or other identifier. Return only the document ID wihtout any prefix or other text. Usually this is a number or alpha number sequience of charaters
-                 summary:       One short sentence, which summerizes the document in the most exact way. In the language of the document.
+                DocumentInfo {
+                    // The sender's or issuing company/organization name. never a number alone, but may contain a number in the zip.
+                    private String from;
+                    // The receiver’s company/organization name. never a number alone, but may contain a number in the zip.
+                    private String to;
+                    
+                    // The date of the letter or document (use ISO format as Java LocalDate: YYYY-MM-DD).
+                    private LocalDate date;
+                    // The type of document (e.g., Rechnung, Mahnung, Lieferschein, Abrechnung, Versicherungsrechnung, etc.), or any other type
+                    private String documentType;
+                    // Any invoice number, reference number, policy number, rechnungsnummer, Rechnung Nr., or other identifier. Return only the document ID wihtout any prefix or other text. Usually this is a number or alpha number sequience of charaters
+                    private String documentNumber;
+                    // One short sentence, which summerizes the document in the most exact way. In the language of the document.
+                    private String summary;
                 }
-                If a property is not available in the text, return null, or leave property out of the response.
+                If a property is not available in the text, use "null", or leave property out of the json response. Not use any fill in text.
                 Some examples for a "documentType" are (other values are possible):
                     - Mahnung
                     - Rechnung
