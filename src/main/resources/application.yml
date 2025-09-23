@@ -6,9 +6,7 @@ spring:
     ollama:
       base-url: http://localhost:11434 # http://192.168.178.87:11434
       chat:
-        options:
-          format: json
-        model: llama3.1 # granite3.3:8b # gemma3:4b # gpt-oss:20b
+        model: qwen3 # llama3.1  gemma3:4b # gpt-oss:20b
       init:
         pull-model-strategy: always
         timeout: 300s

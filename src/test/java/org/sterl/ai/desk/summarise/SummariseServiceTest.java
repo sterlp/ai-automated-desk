@@ -20,8 +20,8 @@ class SummariseServiceTest {
 
     @Test
     void testUsePdfText() throws Exception {
-        var pdfResource = new ClassPathResource("/Musterrechnung_ocr.pdf");
-        try (var pdf = new PdfDocument(pdfResource.getInputStream())) {
+        var pdfFile = new ClassPathResource("/Musterrechnung_ocr.pdf").getFile();
+        try (var pdf = new PdfDocument(pdfFile)) {
             var text = pdf.readText();
             var summerize = subject.summarise(text);
             

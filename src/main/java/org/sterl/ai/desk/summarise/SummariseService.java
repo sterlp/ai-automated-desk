@@ -21,21 +21,32 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SummariseService {
 
-    private final int maxTextLength = 4 * 1000;
+    // make sure only to look at the first page
+    private final int maxTextLength = 4 * 900;
     private final OllamaChatModel ollamaChat;
     private final DocumentConverter documentConverter;
     
     public DocumentInfo summarise(String text) {
         var system = SystemMessage.builder().text("""
+                /set think
                 You are an AI specialized in document information extraction. 
-                Your task is to carefully analyze text documents (such as letters, invoices, reminders, delivery notes, insurance statements, settlements, etc.) and extract the key elements. 
-                Use the language of the given text by the user for the result.
+                Your task is to analyze the provided text document (e.g., letters, invoices, reminders, delivery notes, insurance statements, settlements) and identify its key elements. 
+                Review your extracted elements and correct them if necessary before generating the final result.
+                Try to find for for each field the correct information. 
+                Use the language of the text for the result. 
+                Verify your result before returning it.
                 """ + documentConverter.getFormat()
                 ).build();
         
         // shorten text to the given token count
         if (text.length() > maxTextLength) text = text.substring(0, maxTextLength);
         
+
+        // shorten text to the given token count
+        if (text.length() > maxTextLength) {
+            text = text.substring(0, maxTextLength);
+        }
+
         var message = UserMessage.builder().text(text).build();
         var prompt = new Prompt(Arrays.asList(system, message),
                 OllamaOptions.builder()

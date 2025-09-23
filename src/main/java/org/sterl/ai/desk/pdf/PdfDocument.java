@@ -5,7 +5,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
@@ -16,6 +15,8 @@ import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.lang.NonNull;
+import org.sterl.ai.desk.shared.Strings;
+import org.sterl.ai.desk.summarise.DocumentInfo;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,8 +25,11 @@ public class PdfDocument implements Closeable {
     
     private final PDDocument document;
     private final PDFRenderer renderer;
+    private final File file;
     
     public PdfDocument(File file) {
+        if (!file.isFile()) throw new IllegalArgumentException("Not a file " + file.getAbsolutePath());
+        this.file = file;
         try (var s = new FileInputStream(file)) {
             document =  Loader.loadPDF(new RandomAccessReadBuffer(s));
             renderer = new PDFRenderer(document);
@@ -34,15 +38,6 @@ public class PdfDocument implements Closeable {
         }
     }
 
-    public PdfDocument(InputStream doc) {
-        try (doc) {
-            document =  Loader.loadPDF(new RandomAccessReadBuffer(doc));
-            renderer = new PDFRenderer(document);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    
     public String readText(int page) {
         PDFTextStripper stripper = new PDFTextStripper();
 
@@ -92,5 +87,18 @@ public class PdfDocument implements Closeable {
     @Override
     public void close() throws IOException {
         document.close();
+    }
+
+    public void set(DocumentInfo fileMetaData) {
+        var info = document.getDocumentInformation();
+        if (Strings.notBlank(fileMetaData.getFrom())) info.setCreator(fileMetaData.getFrom());
+        if (Strings.notBlank(fileMetaData.getTitle())) info.setTitle(fileMetaData.getTitle());
+        if (Strings.notBlank(fileMetaData.getSummary())) info.setSubject(fileMetaData.getSummary());
+        document.setDocumentInformation(info);
+        try {
+            document.save(file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
