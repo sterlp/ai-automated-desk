@@ -5,9 +5,11 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.sterl.ai.desk.pdf.PdfDocument;
+import org.sterl.ai.desk.shared.FileHelper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,16 +57,13 @@ public class OcrService {
     }
     
     public ReadFile ocrPdf(File file) {
+        FileHelper.assertIsFile(file);
 
-        var fileName = file.getName();
-        var directory = file.getAbsolutePath().replace(fileName, "");
+        var directory = file.getParent();
+        var fileName = FilenameUtils.getBaseName(file.getName());
         // Docker command
         log.debug("Input={} exists={} size={}kb",
                 file.getAbsolutePath(), file.exists(), file.length() / 1024);
-        
-        if (!file.isFile()) {
-            throw new IllegalArgumentException(file.getAbsolutePath() + " is not a file!");
-        }
         
         var pb = new ProcessBuilder(
                 docker, "run", "-i", "--rm",
@@ -72,7 +71,7 @@ public class OcrService {
                 "--force-ocr", "-l", "deu", "-", "-"
         );
 
-        var output = new File(directory + fileName + ".ocr");
+        var output = new File(directory + fileName + "_ocr.pdf");
         var errorOutput = "";
         try {
             output.createNewFile();

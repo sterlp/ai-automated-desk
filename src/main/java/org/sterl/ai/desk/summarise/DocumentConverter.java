@@ -1,6 +1,7 @@
 package org.sterl.ai.desk.summarise;
 
 import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +15,7 @@ public class DocumentConverter implements StructuredOutputConverter<DocumentInfo
     private final ObjectMapper mapper;
 
     @Override
-    public DocumentInfo convert(String source) {
+    public DocumentInfo convert(@NonNull String source) {
         try {
             return mapper.readValue(source, DocumentInfo.class);
         } catch (Exception e) {
@@ -29,16 +30,17 @@ public class DocumentConverter implements StructuredOutputConverter<DocumentInfo
                 Only provide a RFC8259 compliant JSON response following this format without deviation.
                 The data structure for the JSON object should match this Java class "DocumentInfo" with the properties:
                 class DocumentInfo {
-                    // The sender's or issuing company/organization name. never a number alone, but may contain a number in the zip.
+                    // The sender or issuing company/organization name. never a number alone, but may contain a number in the zip.
                     // This is maybe also the creator of the document. This should never be null.
+                    // If you find a company name and the address of the company which created the document, include both.
                     private String from;
                     // The receiver’s company/organization name. never a number alone, but may contain a number in the zip.
                     // This could be null, if the document has no receiver.
                     private String to;
                     
                     // The date of the letter or document (use ISO format as Java LocalDate: YYYY-MM-DD).
-                    // Verify the dates you find, it should be the date of the document itself.
-                    // If no date is in the document return JSON null.
+                    // Verify the dates you find more than one, this should be the date this document was created at.
+                    // If you can't find any date return JSON null.
                     private LocalDate date;
                     // The type of document (e.g., Rechnung, Mahnung, Lieferschein, Abrechnung, Versicherungsrechnung, etc.), or any other type
                     // This is categorization of the document,what it is. It should never be null. 
@@ -68,7 +70,9 @@ public class DocumentConverter implements StructuredOutputConverter<DocumentInfo
                     7. Keep the total length under 120 characters.
                     8. Ensure the name clearly conveys the document’s purpose and content without ambiguity.
                     9. Verify that all included elements are accurate, relevant, and unique to this document.
-                     */
+                    
+                    The file name shouldn't contain any file extensions. Add only elements you find - don't add place holders, null, or not-found, etc. to the file name.
+                    */
                     private String fileName;
                 }
                 If a property is not available in the text, use "null", or leave property out of the json response. Not use any fill in text.

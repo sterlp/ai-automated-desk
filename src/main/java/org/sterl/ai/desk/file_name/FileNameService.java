@@ -5,19 +5,19 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.sterl.ai.desk.config.AiDeskConfig;
 import org.sterl.ai.desk.ocr.OcrService;
 import org.sterl.ai.desk.pdf.PdfDocument;
+import org.sterl.ai.desk.summarise.DocumentInfo;
 import org.sterl.ai.desk.summarise.SummariseService;
 
-import jakarta.annotation.PostConstruct;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+@Profile("!junit")
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -26,50 +26,37 @@ public class FileNameService {
     private final OcrService ocrService;
     private final SummariseService summariseService;
     
-    @Value("${file.source:./}")
-    @Setter(AccessLevel.PACKAGE)
-    private String sourceDir;
-    @Value("${file.destination:./}")
-    @Setter(AccessLevel.PACKAGE)
-    private String destinationDir;
-    
-    private File s;
-    private File d;
-
-    @PostConstruct
-    void start() {
-        s = new File(sourceDir);
-        d = new File(destinationDir);
-        if (!d.exists()) d.mkdirs();
-        log.info("Source dir:      " + s.getAbsolutePath());
-        log.info("Destination dir: " + d.getAbsolutePath());
-    }
+    private final AiDeskConfig aiDeskConfig;
     
     
     @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
     public void run() {
-        if (!s.exists()) {
-            log.warn("Source folder {} does not exists - doing nothing.", sourceDir);
+        if (!aiDeskConfig.hasSourceDir()) {
+            log.warn("Source folder {} does not exists - doing nothing.", aiDeskConfig.getDestinationDir());
             return;
         }
 
-        var files = FileUtils.listFiles(s, new String[] {".pdf", ".PDF"}, true);
+        var files = FileUtils.listFiles(aiDeskConfig.getSourceDir(), new String[] {".pdf", ".PDF"}, true);
         for (File file : files) {
-            handlePdf(file);
+            handlePdf(file, aiDeskConfig.getSourceDir(), aiDeskConfig.getDestinationDir());
         }
     }
     
-    void handlePdf(File inPdf) {
-        log.info("Processing {}", inPdf.getAbsolutePath().replace(sourceDir, ""));
+    void handlePdf(File inPdf, File sourceDir, File destinationDir) {
+        log.info("Processing {}", inPdf.getAbsolutePath()
+                .replace(sourceDir.getAbsolutePath(), ""));
 
         var ocrPdf = ocrService.ocrPdfIfNeeded(inPdf);
         try (var pdf = new PdfDocument(ocrPdf.out())) {
             var fileMetaData = summariseService.summarise(pdf.readText());
             pdf.set(fileMetaData);
 
-            var targetDir = toDestinationDir(inPdf, s, d);
-            var resultFile = new File(targetDir + fileMetaData.toFileName() + ".pdf");
-            if (resultFile.getName().length() < 4) {
+            var targetDir = toDestinationDir(inPdf, sourceDir, destinationDir);
+            var resultFile = new File(targetDir 
+                    + DocumentInfo.cleanFileName(fileMetaData.getFileName()) 
+                    + ".pdf");
+
+            if (fileMetaData.getFileName().length() < 4) {
                 log.warn("Failed to generate name for {} - result was {}", inPdf.getName(), fileMetaData);
             } else {
                 FileUtils.createParentDirectories(resultFile);

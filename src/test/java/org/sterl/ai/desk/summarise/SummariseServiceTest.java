@@ -6,14 +6,13 @@ import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.sterl.ai.desk.AbstractSpringTest;
 import org.sterl.ai.desk.AiAsserts;
 import org.sterl.ai.desk.pdf.PdfDocument;
 import org.sterl.ai.desk.pdf.PdfUtil;
 
-@SpringBootTest
-class SummariseServiceTest {
+class SummariseServiceTest extends AbstractSpringTest {
 
     @Autowired
     private SummariseService subject;
@@ -35,6 +34,27 @@ class SummariseServiceTest {
             
             assertThat(summerize.getDocumentNumber()).isEqualTo("207581");
             assertThat(summerize.getDate()).isEqualTo(LocalDate.parse("2013-12-31"));
+        }
+    }
+    
+    @Test
+    void test_kassenzettel_lidl_ocr_done() throws Exception {
+        var pdfFile = new ClassPathResource("/kassenzettel_lidl_ocr_done.pdf").getFile();
+        try (var pdf = new PdfDocument(pdfFile)) {
+            var text = pdf.readText();
+            System.err.println(text);
+            System.err.println("----");
+            var summerize = subject.summarise(text);
+            System.err.println(summerize);
+            System.err.println(summerize.toFileName());
+            
+            AiAsserts.assertContains(summerize.getFrom(), "lidl");
+            assertThat(summerize.getDocumentType()).containsAnyOf("Kundenbeleg", "Rechnung");
+            
+            AiAsserts.assertContains(summerize.getFileName(), "2018-02-16", "LIDL");
+            assertThat(summerize.getFileName()).containsAnyOf("Kundenbeleg", "Rechnung");
+            
+            assertThat(summerize.getDate()).isEqualTo(LocalDate.parse("2018-02-16"));
         }
     }
     

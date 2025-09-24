@@ -10,7 +10,11 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.PDPageTree;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -18,6 +22,7 @@ import org.springframework.lang.NonNull;
 import org.sterl.ai.desk.shared.Strings;
 import org.sterl.ai.desk.summarise.DocumentInfo;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -25,6 +30,7 @@ public class PdfDocument implements Closeable {
     
     private final PDDocument document;
     private final PDFRenderer renderer;
+    @Getter
     private final File file;
     
     public PdfDocument(File file) {
@@ -36,6 +42,12 @@ public class PdfDocument implements Closeable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    public PdfDocument(File file, PDDocument document) {
+        this.file = file;
+        this.document = document;
+        this.renderer = new PDFRenderer(document);
     }
 
     public String readText(int page) {
@@ -95,10 +107,85 @@ public class PdfDocument implements Closeable {
         if (Strings.notBlank(fileMetaData.getTitle())) info.setTitle(fileMetaData.getTitle());
         if (Strings.notBlank(fileMetaData.getSummary())) info.setSubject(fileMetaData.getSummary());
         document.setDocumentInformation(info);
+        save();
+    }
+
+    public File save() {
         try {
             document.save(file);
+            return file;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Filed to save PDF to: " + file.getAbsolutePath(), e);
+        }
+    }
+
+    /**
+     * Adds an image to the PDF, supported files:
+     * 
+     * <pre>
+     * jpg jpeg tif tiff png gif bmp png
+     * </pre>
+     */
+    public void addImage(File image) {
+        try {
+            var pdImage = PDImageXObject.createFromFileByExtension(image, document);
+            var imageRect = Rect.of(pdImage);
+
+            // Decide if we should rotate the page to landscape
+            var pageSize = imageRect.isLandscape()
+                    ? new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth())
+                    : PDRectangle.A4;
+
+            var pdPage = new PDPage(pageSize);
+            document.addPage(pdPage);
+
+            try (var contentStream = new PDPageContentStream(document, pdPage)) {
+                var scaledDim = imageRect.scaleTo(Rect.of(pageSize));
+
+                // Center the image on the page
+                float x = (pageSize.getWidth() - scaledDim.width()) / 2;
+                float y = (pageSize.getHeight() - scaledDim.height()) / 2;
+
+                contentStream.drawImage(pdImage, x, y, scaledDim.width(), scaledDim.height());
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to add image: " + image.getAbsolutePath(), e);
+        }
+    }
+    
+    public record Rect(float width, float height) {
+        public static Rect of(PDImage in) {
+            return new Rect(in.getWidth(), in.getHeight());
+        }
+        public static Rect of(PDRectangle in) {
+            return new Rect(in.getWidth(), in.getHeight());
+        }
+        
+        public boolean isLandscape() {
+            return width > height;
+        }
+        /**
+         * Scales this rect to fit the given boundary
+         * 
+         * @return the scaled rect
+         */
+        public Rect scaleTo(Rect boundary) {
+            float originalWidth = this.width();
+            float originalHeight = this.height();
+            float boundWidth = boundary.width();
+            float boundHeight = boundary.height();
+            float newWidth = originalWidth;
+            float newHeight = originalHeight;
+
+            if (newWidth > boundWidth) {
+                newWidth = boundWidth;
+                newHeight = newWidth * originalHeight / originalWidth;
+            }
+            if (newHeight > boundHeight) {
+                newHeight = boundHeight;
+                newWidth = originalWidth * newHeight / originalHeight;
+            }
+            return new Rect(newWidth, newHeight);
         }
     }
 }

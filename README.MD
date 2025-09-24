@@ -1,3 +1,10 @@
+# Ai Desk
+
+Automate common tasks with the help of AI
+
+- [X] Name scanned PDFs
+- [X] Add meta data to scanned PDFs
+- [ ] Convert images to PDFs
 
 # ocrmypdf
 

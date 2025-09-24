@@ -8,16 +8,17 @@ import lombok.Data;
 
 @Data
 public class DocumentInfo {
-    // The sender's or issuing company/organization name. never a number alone, but may contain a number in the zip.
+    // The sender or issuing company/organization name. never a number alone, but may contain a number in the zip.
     // This is maybe also the creator of the document. This should never be null.
+    // If you find a company name and the address of the company which created the document, include both.
     private String from;
     // The receiver’s company/organization name. never a number alone, but may contain a number in the zip.
     // This could be null, if the document has no receiver.
     private String to;
     
     // The date of the letter or document (use ISO format as Java LocalDate: YYYY-MM-DD).
-    // Verify the dates you find, it should be the date of the document itself.
-    // If no date is in the document return JSON null.
+    // Verify the dates you find more than one, this should be the date this document was created at.
+    // If you can't find any date return JSON null.
     private LocalDate date;
     // The type of document (e.g., Rechnung, Mahnung, Lieferschein, Abrechnung, Versicherungsrechnung, etc.), or any other type
     // This is categorization of the document,what it is. It should never be null. 
@@ -47,7 +48,9 @@ public class DocumentInfo {
     7. Keep the total length under 120 characters.
     8. Ensure the name clearly conveys the document’s purpose and content without ambiguity.
     9. Verify that all included elements are accurate, relevant, and unique to this document.
-     */
+    
+    The file name shouldn't contain any file extensions. Add only elements you find - don't add place holders, null, or not-found, etc. to the file name.
+    */
     private String fileName;
     
     public String toFileName() {
@@ -69,6 +72,9 @@ public class DocumentInfo {
         resultString = resultString.replace('#', Character.MIN_VALUE);
         resultString = resultString.replace('?', Character.MIN_VALUE);
         resultString = resultString.replace('*', Character.MIN_VALUE);
+        resultString = resultString.replace('\n', Character.MIN_VALUE);
+        resultString = resultString.replace('\r', Character.MIN_VALUE);
+        resultString = resultString.replace('\t', Character.MIN_VALUE);
         return resultString;
     }
 }
