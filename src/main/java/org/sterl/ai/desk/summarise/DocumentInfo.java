@@ -65,6 +65,19 @@ public class DocumentInfo {
         return cleanFileName(String.join(" ", result));
     }
     
+    public String keyWords() {
+        var result = new ArrayList<String>();
+        
+        if (documentType != null) result.add(documentType);
+        if (documentNumber != null) result.add(documentNumber);
+
+        return String.join(" ", result);
+    }
+    
+    public boolean hasValidFileName() {
+        return getFileName() != null && getFileName().length() > 3;
+    }
+    
     public static String cleanFileName(String value) {
         var resultString = value.replace(File.separatorChar, '_');
         resultString = resultString.replace('|', Character.MIN_VALUE);

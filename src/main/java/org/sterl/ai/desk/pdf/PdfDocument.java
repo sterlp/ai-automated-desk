@@ -9,16 +9,17 @@ import java.io.IOException;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.lang.NonNull;
+import org.sterl.ai.desk.shared.Rect;
 import org.sterl.ai.desk.shared.Strings;
 import org.sterl.ai.desk.summarise.DocumentInfo;
 
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PdfDocument implements Closeable {
     
+    @Getter
     private final PDDocument document;
     private final PDFRenderer renderer;
     @Getter
@@ -106,16 +108,21 @@ public class PdfDocument implements Closeable {
         if (Strings.notBlank(fileMetaData.getFrom())) info.setCreator(fileMetaData.getFrom());
         if (Strings.notBlank(fileMetaData.getTitle())) info.setTitle(fileMetaData.getTitle());
         if (Strings.notBlank(fileMetaData.getSummary())) info.setSubject(fileMetaData.getSummary());
+        
+        info.setKeywords(fileMetaData.keyWords());
+        
         document.setDocumentInformation(info);
-        save();
     }
 
     public File save() {
+        save(file);
+        return file;
+    }
+    public void save(File toFile) {
         try {
-            document.save(file);
-            return file;
+            document.save(toFile);
         } catch (IOException e) {
-            throw new RuntimeException("Filed to save PDF to: " + file.getAbsolutePath(), e);
+            throw new RuntimeException("Failed to save PDF to: " + toFile.getAbsolutePath(), e);
         }
     }
 
@@ -140,7 +147,8 @@ public class PdfDocument implements Closeable {
             document.addPage(pdPage);
 
             try (var contentStream = new PDPageContentStream(document, pdPage)) {
-                var scaledDim = imageRect.scaleTo(Rect.of(pageSize));
+                var pageRect = Rect.of(pageSize);
+                var scaledDim = imageRect.scaleTo(pageRect);
 
                 // Center the image on the page
                 float x = (pageSize.getWidth() - scaledDim.width()) / 2;
@@ -152,40 +160,8 @@ public class PdfDocument implements Closeable {
             throw new RuntimeException("Failed to add image: " + image.getAbsolutePath(), e);
         }
     }
-    
-    public record Rect(float width, float height) {
-        public static Rect of(PDImage in) {
-            return new Rect(in.getWidth(), in.getHeight());
-        }
-        public static Rect of(PDRectangle in) {
-            return new Rect(in.getWidth(), in.getHeight());
-        }
-        
-        public boolean isLandscape() {
-            return width > height;
-        }
-        /**
-         * Scales this rect to fit the given boundary
-         * 
-         * @return the scaled rect
-         */
-        public Rect scaleTo(Rect boundary) {
-            float originalWidth = this.width();
-            float originalHeight = this.height();
-            float boundWidth = boundary.width();
-            float boundHeight = boundary.height();
-            float newWidth = originalWidth;
-            float newHeight = originalHeight;
 
-            if (newWidth > boundWidth) {
-                newWidth = boundWidth;
-                newHeight = newWidth * originalHeight / originalWidth;
-            }
-            if (newHeight > boundHeight) {
-                newHeight = boundHeight;
-                newWidth = originalWidth * newHeight / originalHeight;
-            }
-            return new Rect(newWidth, newHeight);
-        }
+    public PDDocumentInformation getDocumentInformation() {
+        return document.getDocumentInformation();
     }
 }

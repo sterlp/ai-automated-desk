@@ -23,7 +23,7 @@ public class ImageService {
         Objects.requireNonNull(images, "Images cannot be null");
         
         for (final var file : images) {
-            if (file != null) addToPdf(doc, file);
+            if (file != null) doc.addImage(file);
         }
     }
 }

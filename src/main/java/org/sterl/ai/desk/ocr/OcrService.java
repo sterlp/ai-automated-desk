@@ -33,6 +33,7 @@ public class OcrService {
             if (txt.length() < 10) {
                 return ocrAndReplacePdf(inPdf);
             }
+            log.info("OCR not needed for {}", inPdf.getName());
             return new ReadFile(inPdf, false, null);
         } catch (Exception e) {
             throw new RuntimeException(e);
