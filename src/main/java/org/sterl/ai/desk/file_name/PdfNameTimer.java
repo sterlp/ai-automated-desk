@@ -19,18 +19,18 @@ import lombok.extern.slf4j.Slf4j;
 public class PdfNameTimer {
 
     private final FileNameService fileNameService;
-    private final AiDeskConfig aiDeskConfig;
+    private final AiDeskConfig config;
     
     @Scheduled(fixedDelay = 10, timeUnit = TimeUnit.SECONDS)
     public void run() {
-        if (!aiDeskConfig.hasSourceDir()) {
-            log.warn("Source folder {} does not exists - doing nothing.", aiDeskConfig.getDestinationDir());
+        if (!config.hasSourceDir()) {
+            log.warn("Source folder {} does not exists - doing nothing.", config.getDestinationDir());
             return;
         }
 
-        var files = FileUtils.listFiles(aiDeskConfig.getSourceDir(), new String[] {".pdf", ".PDF"}, true);
+        var files = FileUtils.listFiles(config.getSourceDir(), new String[] {".pdf", ".PDF"}, true);
         for (File file : files) {
-            fileNameService.handlePdf(file, aiDeskConfig.getSourceDir(), aiDeskConfig.getDestinationDir());
+            fileNameService.handlePdf(file, config.getSourceDir(), config.getDestinationDir());
         }
     }
 }

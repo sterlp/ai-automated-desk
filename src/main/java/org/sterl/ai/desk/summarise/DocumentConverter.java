@@ -38,10 +38,10 @@ public class DocumentConverter implements StructuredOutputConverter<DocumentInfo
                     // This could be null, if the document has no receiver.
                     private String to;
                     
-                    // The date of the letter or document (use ISO format as Java LocalDate: YYYY-MM-DD).
+                    // The date of the letter or document use ISO format as Java LocalDate format "YYYY-MM-DD".
                     // Verify the dates you find more than one, this should be the date this document was created at.
                     // If you can't find any date return JSON null.
-                    private LocalDate date;
+                    private String date;
                     // The type of document (e.g., Rechnung, Mahnung, Lieferschein, Abrechnung, Versicherungsrechnung, etc.), or any other type
                     // This is categorization of the document,what it is. It should never be null. 
                     private String documentType;

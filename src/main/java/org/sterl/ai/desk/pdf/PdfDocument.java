@@ -25,8 +25,11 @@ import org.sterl.ai.desk.summarise.DocumentInfo;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j;
+import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
+@Slf4j
 public class PdfDocument implements Closeable {
     
     @Getter
@@ -113,6 +116,9 @@ public class PdfDocument implements Closeable {
         
         document.setDocumentInformation(info);
     }
+    public PDDocumentInformation getDocumentInformation() {
+        return document.getDocumentInformation();
+    }
 
     public File save() {
         save(file);
@@ -121,6 +127,7 @@ public class PdfDocument implements Closeable {
     public void save(File toFile) {
         try {
             document.save(toFile);
+            log.debug("Saving pdf to {}", toFile.getAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException("Failed to save PDF to: " + toFile.getAbsolutePath(), e);
         }
@@ -159,9 +166,5 @@ public class PdfDocument implements Closeable {
         } catch (IOException e) {
             throw new RuntimeException("Failed to add image: " + image.getAbsolutePath(), e);
         }
-    }
-
-    public PDDocumentInformation getDocumentInformation() {
-        return document.getDocumentInformation();
     }
 }

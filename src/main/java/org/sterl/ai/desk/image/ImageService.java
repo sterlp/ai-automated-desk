@@ -21,7 +21,7 @@ public class ImageService {
     
     public void addToPdf(PdfDocument doc, Collection<File> images) {
         Objects.requireNonNull(images, "Images cannot be null");
-        
+
         for (final var file : images) {
             if (file != null) doc.addImage(file);
         }

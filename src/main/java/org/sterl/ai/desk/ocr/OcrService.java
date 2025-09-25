@@ -6,8 +6,10 @@ import java.io.InputStreamReader;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.sterl.ai.desk.metric.MetricService;
 import org.sterl.ai.desk.pdf.PdfDocument;
 import org.sterl.ai.desk.shared.FileHelper;
 
@@ -19,7 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OcrService {
     
+    @Value("${ai-desk.docker:docker}")
     private String docker = "/usr/local/bin/docker";
+    private final MetricService metricService;
 
     public record ReadFile (File out, boolean ocrDone, @Nullable String message) {
         public long size() {
@@ -59,12 +63,10 @@ public class OcrService {
     
     public ReadFile ocrPdf(File file) {
         FileHelper.assertIsFile(file);
+        var timer = metricService.timer("ocr", getClass());
 
         var directory = file.getParent();
         var fileName = FilenameUtils.getBaseName(file.getName());
-        // Docker command
-        log.debug("Input={} exists={} size={}kb",
-                file.getAbsolutePath(), file.exists(), file.length() / 1024);
         
         var pb = new ProcessBuilder(
                 docker, "run", "-i", "--rm",
@@ -72,7 +74,11 @@ public class OcrService {
                 "--force-ocr", "-l", "deu", "-", "-"
         );
 
-        var output = new File(directory + fileName + "_ocr.pdf");
+        var output = new File(directory + File.separatorChar + fileName + "_ocr.pdf");
+
+        log.debug("Input={} to={} size={}kb",
+                file.getName(), output.getAbsolutePath(), file.length() / 1024);
+
         var errorOutput = "";
         try {
             output.createNewFile();
@@ -88,7 +94,10 @@ public class OcrService {
                 output.delete();
                 throw new RuntimeException("Failed to OCR + " + file.getAbsolutePath() + ":\n" + errorOutput);
             }
+            timer.stop("OCR " + file.getName());
         } catch (Exception e) {
+            timer.stop(e);
+            if (e instanceof RuntimeException ex) throw ex;
             throw new RuntimeException("Failed to OCR " + file.getAbsolutePath() + ":\n" + errorOutput, e);
         }
         return new ReadFile(output, true, errorOutput);

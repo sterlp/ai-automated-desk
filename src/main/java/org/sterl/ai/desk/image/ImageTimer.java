@@ -35,8 +35,8 @@ public class ImageTimer {
             return;
         }
 
-        var files = FileUtils.listFiles(config.getSourceDir(), 
-                supportedFiles, true);
+        var files = FileUtils.listFiles(config.getSourceDir(), supportedFiles, true);
+
         for (File file : files) {
             try (var pdf = new PdfDocument(new File(file.getAbsoluteFile() + ".pdf"), new PDDocument())) {
                 imageService.addToPdf(pdf, file);

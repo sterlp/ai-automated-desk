@@ -1,8 +1,9 @@
 package org.sterl.ai.desk.summarise;
 
 import java.io.File;
-import java.time.LocalDate;
 import java.util.ArrayList;
+
+import org.sterl.ai.desk.shared.Strings;
 
 import lombok.Data;
 
@@ -16,10 +17,10 @@ public class DocumentInfo {
     // This could be null, if the document has no receiver.
     private String to;
     
-    // The date of the letter or document (use ISO format as Java LocalDate: YYYY-MM-DD).
+    // The date of the letter or document use ISO format as Java LocalDate format "YYYY-MM-DD".
     // Verify the dates you find more than one, this should be the date this document was created at.
     // If you can't find any date return JSON null.
-    private LocalDate date;
+    private String date;
     // The type of document (e.g., Rechnung, Mahnung, Lieferschein, Abrechnung, Versicherungsrechnung, etc.), or any other type
     // This is categorization of the document,what it is. It should never be null. 
     private String documentType;
@@ -56,13 +57,24 @@ public class DocumentInfo {
     public String toFileName() {
         var result = new ArrayList<String>();
         
-        if (date != null) result.add(date.toString());
-        if (documentType != null) result.add(documentType);
-        if (documentNumber != null) result.add(documentNumber);
-        if (from != null) result.add(from);
-        if (to != null) result.add(to);
+        if (Strings.notBlank(date)) result.add(date.toString());
+        if (Strings.notBlank(documentType)) result.add(documentType);
+        if (Strings.notBlank(documentNumber)) result.add(documentNumber);
+        if (Strings.notBlank(from)) result.add(from);
+        if (Strings.notBlank(to)) result.add(to);
 
         return cleanFileName(String.join(" ", result));
+    }
+    
+    public String buildFileName() {
+        var result = cleanFileName(fileName);
+        if (result == null || result.length() < 3) return toFileName();
+        return result;
+    }
+    
+    public boolean hasValidFileName() {
+        var name = buildFileName();
+        return name != null && name.length() > 3;
     }
     
     public String keyWords() {
@@ -72,10 +84,6 @@ public class DocumentInfo {
         if (documentNumber != null) result.add(documentNumber);
 
         return String.join(" ", result);
-    }
-    
-    public boolean hasValidFileName() {
-        return getFileName() != null && getFileName().length() > 3;
     }
     
     public static String cleanFileName(String value) {
@@ -88,6 +96,7 @@ public class DocumentInfo {
         resultString = resultString.replace('\n', Character.MIN_VALUE);
         resultString = resultString.replace('\r', Character.MIN_VALUE);
         resultString = resultString.replace('\t', Character.MIN_VALUE);
+        resultString = resultString.replaceAll("null", "");
         return resultString;
     }
 }
