@@ -1,8 +1,8 @@
 package org.sterl.ai.desk.summarise;
 
-import java.io.File;
 import java.util.ArrayList;
 
+import org.sterl.ai.desk.shared.FileHelper;
 import org.sterl.ai.desk.shared.Strings;
 
 import lombok.Data;
@@ -63,11 +63,11 @@ public class DocumentInfo {
         if (Strings.notBlank(from)) result.add(from);
         if (Strings.notBlank(to)) result.add(to);
 
-        return cleanFileName(String.join(" ", result));
+        return FileHelper.cleanFileName(String.join(" ", result));
     }
     
     public String buildFileName() {
-        var result = cleanFileName(fileName);
+        var result = FileHelper.cleanFileName(fileName);
         if (result == null || result.length() < 3) return toFileName();
         return result;
     }
@@ -86,18 +86,4 @@ public class DocumentInfo {
         return String.join(" ", result);
     }
     
-    public static String cleanFileName(String value) {
-        if (value == null || value.isBlank()) return value;
-        var resultString = value.replace(File.separatorChar, '_');
-        resultString = resultString.replace('|', Character.MIN_VALUE);
-        resultString = resultString.replace('$', Character.MIN_VALUE);
-        resultString = resultString.replace('#', Character.MIN_VALUE);
-        resultString = resultString.replace('?', Character.MIN_VALUE);
-        resultString = resultString.replace('*', Character.MIN_VALUE);
-        resultString = resultString.replace('\n', Character.MIN_VALUE);
-        resultString = resultString.replace('\r', Character.MIN_VALUE);
-        resultString = resultString.replace('\t', Character.MIN_VALUE);
-        resultString = resultString.replaceAll("null", "");
-        return resultString;
-    }
 }

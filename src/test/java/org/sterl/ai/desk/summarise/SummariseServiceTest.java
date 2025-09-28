@@ -2,18 +2,17 @@ package org.sterl.ai.desk.summarise;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Stream;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -99,36 +98,14 @@ public class SummariseServiceTest extends AbstractSpringTest {
             HOTEL_STERN_MUSTER_RECHNUNG,
             LIDL_RECHNUNG
         );
-    
-    private final static String outDir = "." + File.separatorChar + "llmOut";
-    private final static Path SUMMARY_FILE = Path.of("./Summary.MD");
-    private final static Path BENCHMARK_FILE = Path.of("./Benchmark.MD");
-    
+
     @BeforeAll
     public static void beforeAll() throws IOException {
-        if (Path.of(outDir).toFile().exists()) {
-            FileUtils.cleanDirectory(Path.of(outDir).toFile());
-        }
-        var head = new StringBuilder();
-        head.append("| LLM  |");
-        for (var doc : TEST_DOCS) {
-            head.append(" ").append(doc.getName()).append(" |");
-        }
-        head.append('\n');
-        head.append("| ---- |");
-        for (var doc : TEST_DOCS) {
-            head.append(" ").append(Strings.repeat("-", doc.getName().length())).append(" |");
-        }
-        head.append('\n');
-
-        if (!Files.exists(SUMMARY_FILE)) Files.createFile(SUMMARY_FILE);
-        Files.writeString(SUMMARY_FILE, head.toString(), StandardOpenOption.TRUNCATE_EXISTING);
-        
-        if (Files.exists(BENCHMARK_FILE)) {
-            Files.writeString(BENCHMARK_FILE, "", StandardOpenOption.TRUNCATE_EXISTING);
-        } else {
-            BENCHMARK_FILE.toFile().createNewFile();
-        }
+        initHeader(Stream.concat(
+                Stream.of("LLM"),
+                TEST_DOCS.stream().map(h -> h.getName())
+            )
+        );
     }
     
     @BeforeEach
@@ -153,17 +130,15 @@ public class SummariseServiceTest extends AbstractSpringTest {
      */
     @ValueSource(strings = {
             "qwen3:4b", "qwen3:8b", "qwen3:14b",
-            "gemma3:4b", "gemma3:12b", "gemma3:27b",
+            "gemma3:4b", "gemma3:12b",
             "mistral:7b",
-            "granite3.3:8b", 
-            "llama3.1:8b", 
-            "deepseek-r1:14b",
-            "gpt-oss:20b"}) // 
+            "granite3.3:8b",
+            "llama3.1:8b",
+            "deepseek-r1:14b"}) // 
     @ParameterizedTest
     void test_benchmark_LLM(String llm) throws Exception {
         // GIVEN
-        
-        var destination = Path.of(outDir, llm).toFile();
+        var destination = Path.of(PDF_OUT_DIR, FileHelper.cleanFileName(llm)).toFile();
         if (!destination.exists()) destination.mkdirs();
 
         // AND init model
@@ -198,6 +173,14 @@ public class SummariseServiceTest extends AbstractSpringTest {
                 log.info("{} finished {} in {}ms", llm, doc.getName(), (System.currentTimeMillis() - start));
             }
         }
+        
+        var row = new ArrayList<String>();
+        row.add(llm);
+        for (var s : docStats.values()) {
+            var score = s.getScore();
+            row.add(score.isPresent() ? score.get().value() : "failed");
+        }
+        SUMMARY_TABLE.addRow(row);
 
         for (var e : docStats.entrySet()) {
             System.err.println("## " + e.getKey());
@@ -206,15 +189,6 @@ public class SummariseServiceTest extends AbstractSpringTest {
             FileHelper.appendLine(BENCHMARK_FILE.toFile(), "## " + e.getKey());
             FileHelper.appendLine(BENCHMARK_FILE.toFile(), e.getValue().toString());
         }
-
-        String value = "| " + llm + " |";
-        for (var s : docStats.values()) {
-            value += " ";
-            var score = s.getScore();
-            value += score.isPresent() ? score.get().value() : "failed";
-            value += " |";
-        }
-        FileHelper.appendLine(SUMMARY_FILE.toFile(), value);
     }
 
     //@Test

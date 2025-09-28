@@ -10,6 +10,23 @@ import java.util.Objects;
 import org.apache.commons.io.FilenameUtils;
 
 public class FileHelper {
+    
+    public static String cleanFileName(String value) {
+        if (value == null || value.isBlank()) return value;
+        var result = value.replace('/', '_');
+        result = result.replace('\\', '_');
+        result = result.replace(':', '_');
+        result = result.replace('|', Character.MIN_VALUE);
+        result = result.replace('$', Character.MIN_VALUE);
+        result = result.replace('#', Character.MIN_VALUE);
+        result = result.replace('?', Character.MIN_VALUE);
+        result = result.replace('*', Character.MIN_VALUE);
+        result = result.replace('\n', Character.MIN_VALUE);
+        result = result.replace('\r', Character.MIN_VALUE);
+        result = result.replace('\t', Character.MIN_VALUE);
+
+        return result;
+    }
 
     public static void assertIsFile(File file) {
         Objects.requireNonNull(file, "File cannot be null!");
