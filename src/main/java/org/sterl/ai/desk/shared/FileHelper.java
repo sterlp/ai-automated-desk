@@ -1,6 +1,10 @@
 package org.sterl.ai.desk.shared;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import org.apache.commons.io.FilenameUtils;
@@ -35,5 +39,20 @@ public class FileHelper {
 
         if (result.charAt(result.length() - 1) == File.separatorChar) return result;
         return result + File.separatorChar;
+    }
+
+    public static void append(Path f, String text) {
+        append(f.toFile(), text);
+    }
+    public static void append(File f, String text) {
+        try {
+            Files.writeString(f.toPath(), text, StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void appendLine(File f, String text) {
+        append(f, text + '\n');
     }
 }

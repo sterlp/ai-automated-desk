@@ -87,6 +87,7 @@ public class DocumentInfo {
     }
     
     public static String cleanFileName(String value) {
+        if (value == null || value.isBlank()) return value;
         var resultString = value.replace(File.separatorChar, '_');
         resultString = resultString.replace('|', Character.MIN_VALUE);
         resultString = resultString.replace('$', Character.MIN_VALUE);

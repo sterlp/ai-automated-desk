@@ -4,7 +4,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles("junit")
-@SpringBootTest
+@SpringBootTest(classes = AiDeskApplication.class)
 public class AbstractSpringTest {
 
 }

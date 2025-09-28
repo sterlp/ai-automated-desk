@@ -3,11 +3,19 @@ package org.sterl.ai.desk.summarise;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.util.Strings;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,155 +24,199 @@ import org.sterl.ai.desk.AbstractSpringTest;
 import org.sterl.ai.desk.AiAsserts;
 import org.sterl.ai.desk.pdf.PdfDocument;
 import org.sterl.ai.desk.pdf.PdfUtil;
-import org.sterl.ai.desk.shared.Strings;
+import org.sterl.ai.desk.shared.FileHelper;
+import org.sterl.ai.desk.shared.LlmScore;
+import org.sterl.ai.desk.shared.LlmStatistics;
+import org.sterl.ai.desk.shared.LlmStatistics.LlmStatistic;
+import org.sterl.ai.desk.shared.LlmTestDocument;
 
-class SummariseServiceTest extends AbstractSpringTest {
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+public class SummariseServiceTest extends AbstractSpringTest {
 
     @Autowired
     private SummariseService subject;
     
+    final static LlmTestDocument HOTEL_STERN_MUSTER_RECHNUNG = 
+            new LlmTestDocument("Rechnung Hotel Stern", "/Musterrechnung_ocr.pdf") {
+        
+        public LlmScore score(PdfDocument doc) {
+            var fileName = doc.getFile().getName();
+            var score = new LlmScore();
+
+            score.contains(2, fileName, "2013-", "-12-", "-31");
+            score.contains(3, fileName, "rechnung", "207581");
+            score.contains(fileName, "Hotel", "Gasthof", "Stern");
+            score.containsNot(fileName, ".", ".pdf");
+            
+            score.contains(2, fileName, "stern", "207581");
+            
+            var infos = doc.getDocumentInformation();
+            score.contains(infos.getCreator(), "Hotel", "Gasthof", "Stern", "Pfaffenhausen");
+            score.contains(infos.getTitle(), "Hotel", "Rechnung", "Gasthof", "Stern", "207581");
+            score.contains(infos.getSubject(), 
+                    "Rechnung", "Gasthof", "Stern", "207581", "SEPA",
+                    "01.12.2013", "31.12.2013", "Rechnungsnummer", "Betrag", 
+                    "14,03", "701,68", " EUR");
+            
+            score.containsNotAny(infos.getSubject(), "Invoice", "expenses");
+            score.containsNot(infos.getTitle(), "Invoice");
+            
+            return score;
+        }
+    };
+    
+    final static LlmTestDocument LIDL_RECHNUNG = 
+            new LlmTestDocument("LIDL Rechnung", "/kassenzettel_lidl_ocr_done.pdf") {
+        
+        public LlmScore score(PdfDocument doc) {
+            var fileName = doc.getFile().getName();
+            var score = new LlmScore();
+
+            score.contains(2, fileName,"2018-", "-02-", "-16");
+            score.contains(3, fileName, "LIDL");
+            score.containsAny(3, fileName, "Kundenbeleg", "Rechnung");
+            score.containsNot(fileName, ".", "0978", "182607");
+            
+            var infos = doc.getDocumentInformation();
+            score.contains(infos.getCreator(), "LIDL", "Heegermühlerstr. 1", "16225", "Eberswalde");
+            
+            score.contains(infos.getTitle(), "LIDL", "6,38", "16.02.2018");
+            score.containsAny(1, infos.getTitle(), "Rechnung", "Kundenbeleg");
+            score.containsNot(1, infos.getTitle(), "Lieferschein");
+            score.containsNot(1, infos.getTitle(), "Receipt");
+            
+            score.contains(infos.getSubject(), "LIDL", "6,38", "EUR", "Einkäufe", "Kartenzahlung", 
+                    "16.02.2018", "15:25");
+            score.containsAny(1, infos.getSubject(), "Rechnung", "Kundenbeleg");
+            
+            return score;
+        }
+    };
+    
+    static List<LlmTestDocument> TEST_DOCS = Arrays.asList(
+            HOTEL_STERN_MUSTER_RECHNUNG,
+            LIDL_RECHNUNG
+        );
+    
+    private final static String outDir = "." + File.separatorChar + "llmOut";
+    private final static Path SUMMARY_FILE = Path.of("./Summary.MD");
+    private final static Path BENCHMARK_FILE = Path.of("./Benchmark.MD");
+    
+    @BeforeAll
+    public static void beforeAll() throws IOException {
+        if (Path.of(outDir).toFile().exists()) {
+            FileUtils.cleanDirectory(Path.of(outDir).toFile());
+        }
+        var head = new StringBuilder();
+        head.append("| LLM  |");
+        for (var doc : TEST_DOCS) {
+            head.append(" ").append(doc.getName()).append(" |");
+        }
+        head.append('\n');
+        head.append("| ---- |");
+        for (var doc : TEST_DOCS) {
+            head.append(" ").append(Strings.repeat("-", doc.getName().length())).append(" |");
+        }
+        head.append('\n');
+
+        if (!Files.exists(SUMMARY_FILE)) Files.createFile(SUMMARY_FILE);
+        Files.writeString(SUMMARY_FILE, head.toString(), StandardOpenOption.TRUNCATE_EXISTING);
+        
+        if (Files.exists(BENCHMARK_FILE)) {
+            Files.writeString(BENCHMARK_FILE, "", StandardOpenOption.TRUNCATE_EXISTING);
+        } else {
+            BENCHMARK_FILE.toFile().createNewFile();
+        }
+    }
+    
     @BeforeEach
-    void before() {
+    public void before() {
         subject.setLlmModel(null);
     }
     
-    public static class Score {
-        int total = 0;
-        int points = 0;
-        
-        public void contains(String source, String vaue) {
-            if (Strings.isBlank(source)) add(false, 2);
-            else add(source.toLowerCase().contains(vaue.toLowerCase()), 1);
+    /*
+    @ValueSource(strings = {
+            "qwen3:4b", "qwen3:8b", "qwen3:14b",
+            "gemma3:4b", "gemma3:12b",
+            "granite3.3:8b",
+            "deepseek-r1:14b", 
+            "gpt-oss:20b",
         }
-        public void contains(String source, String vaue, String... others) {
-            contains(source, vaue);
-            for (String v : others) {
-                contains(source, v);
+    )
+    @ValueSource(strings = {
+            "qwen3:4b",
+            "gemma3:4b"
+    }
+            )
+     */
+    @ValueSource(strings = {
+            "qwen3:4b", "qwen3:8b", "qwen3:14b",
+            "gemma3:4b", "gemma3:12b", "gemma3:27b",
+            "mistral:7b",
+            "granite3.3:8b", 
+            "llama3.1:8b", 
+            "deepseek-r1:14b",
+            "gpt-oss:20b"}) // 
+    @ParameterizedTest
+    void test_benchmark_LLM(String llm) throws Exception {
+        // GIVEN
+        
+        var destination = Path.of(outDir, llm).toFile();
+        if (!destination.exists()) destination.mkdirs();
+
+        // AND init model
+        subject.setLlmModel(llm);
+        try {
+            subject.summarise("This is a test file description, return file name: " + LocalDate.now() + "-test_" + llm);
+        } catch(Exception ignore) {}
+        
+        var docStats = new LinkedHashMap<String, LlmStatistics>();
+        for (var doc : TEST_DOCS) {
+            // THEN
+            var llmStats = new LlmStatistics();
+            docStats.put(doc.getName(), llmStats);
+            final long start = System.currentTimeMillis();
+            try {
+                var result = subject.summariseAndNamePdf(doc.getPdfFile(), destination);
+                var resultFile = result.result();
+                
+                // THEN check file name
+                
+                try (var pdf = new PdfDocument(resultFile)) {
+                    var score = doc.score(pdf);
+                    llmStats.addScore(llm, score);
+                    llmStats.addTime(llm, result.timeInMs());
+                    llmStats.add(llm, pdf);
+                }
+            } catch (Exception e) {
+                llmStats.getStats().add(new LlmStatistic(llm, "Error", e.getMessage()));
+                llmStats.addTime(llm, System.currentTimeMillis() - start);
+                log.error("LLM {} failed {}", llm, doc.getName(), e);
+            } finally {
+                log.info("{} finished {} in {}ms", llm, doc.getName(), (System.currentTimeMillis() - start));
             }
         }
-        public void add(boolean score) {
-            add(score, 1);
-        }
-        public void add(boolean score, int addScore) {
-            total += addScore;
-            if (score) points += addScore;
-        }
-        
-        public String toString() {
-            return points + "/" + total + " = " + (int)( (float)points / (float)total * 100f) + "%";
-        }
-    }
-    
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "qwen3:4b", "gemma3:4b", 
-            "qwen3:8b", "llama3.1:8b", 
-            "granite3.3:8b", "mistral:7b",
-            "gemma3:12b"}) // "deepseek-r1:7b"
-    void test_LLMs_Musterrechnung_ocr(String llm) throws Exception {
-        var pdfFile = new ClassPathResource("/Musterrechnung_ocr.pdf").getFile();
-        
-        var destination = new File("." + File.separatorChar + llm + File.separatorChar);
-        if (destination.exists()) FileUtils.cleanDirectory(destination);
-        else destination.mkdirs();
 
-        subject.setLlmModel(llm);
-        
-        System.err.println("## " + llm);
-        var resultFile = subject.summariseAndNamePdf(pdfFile, new File("./" + llm));
-        
-        var score = new Score();
-        score.contains(resultFile.getName(), "2013-", "-12-", "-31");
-        score.contains(resultFile.getName(), "Hotel");
-        score.add(resultFile.getName().toLowerCase().contains("rechnung"), 3);
-        score.add(resultFile.getName().toLowerCase().contains("stern"), 2);
-        score.add(resultFile.getName().contains("207581"), 2);
-
-        try (var pdf = new PdfDocument(resultFile)) {
-            var infos = pdf.getDocumentInformation();
-            score.contains(infos.getCreator(), "Gasthof", "Stern", "Postfach", "86310", "Pfaffenhausen");
-            score.contains(infos.getTitle(), "Rechnung", "207581");
-            score.contains(infos.getSubject(), "01.12.2013", "31.12.2013", "Rechnung", "Betrag", "701,68");
+        for (var e : docStats.entrySet()) {
+            System.err.println("## " + e.getKey());
+            e.getValue().print(System.err);
+            
+            FileHelper.appendLine(BENCHMARK_FILE.toFile(), "## " + e.getKey());
+            FileHelper.appendLine(BENCHMARK_FILE.toFile(), e.getValue().toString());
         }
-        System.err.println(llm + " score: " + score);
-        System.err.flush();
-        System.out.flush();
-    }
-    
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "qwen3:4b", "gemma3:4b", 
-            "qwen3:8b", "llama3.1:8b", 
-            "granite3.3:8b", "mistral:7b",
-            "gemma3:12b"}) // "deepseek-r1:7b"
-    void test_LLMs_kassenzettel_lidl(String llm) throws Exception {
-        var pdfFile = new ClassPathResource("/kassenzettel_lidl_ocr_done.pdf").getFile();
-        
-        var destination = new File("." + File.separatorChar + llm + File.separatorChar);
-        if (destination.exists()) FileUtils.cleanDirectory(destination);
-        else destination.mkdirs();
 
-        subject.setLlmModel(llm);
-        
-        System.err.println("## " + llm);
-        var resultFile = subject.summariseAndNamePdf(pdfFile, new File("./" + llm));
-        
-        var score = new Score();
-        score.add(resultFile.getName().toLowerCase().contains("2018-02-16"), 3);
-        score.add(resultFile.getName().toLowerCase().contains("rechnung"), 3);
-        score.add(resultFile.getName().toLowerCase().contains("lidl"), 3);
-        try (var pdf = new PdfDocument(resultFile)) {
-            var infos = pdf.getDocumentInformation();
-            score.contains(infos.getCreator(), "LIDL", "Heegermühlerstr. 1", "16225", "Eberswalde");
-            score.contains(infos.getTitle(), "LIDL", "Rechnung", "6,38");
-            score.contains(infos.getSubject(), "LIDL", "Rechnung", "6,38", "Einkäufe", "182607");
+        String value = "| " + llm + " |";
+        for (var s : docStats.values()) {
+            value += " ";
+            var score = s.getScore();
+            value += score.isPresent() ? score.get().value() : "failed";
+            value += " |";
         }
-        System.err.println(llm + " score: " + score);
-        System.err.flush();
-        System.out.flush();
+        FileHelper.appendLine(SUMMARY_FILE.toFile(), value);
     }
 
-    @Test
-    void testUsePdfText() throws Exception {
-        var pdfFile = new ClassPathResource("/Musterrechnung_ocr.pdf").getFile();
-        try (var pdf = new PdfDocument(pdfFile)) {
-            var text = pdf.readText();
-            var summerize = subject.summarise(text);
-            
-            System.err.println(text);
-            System.err.println("----");
-            System.err.println(summerize);
-            System.err.println(summerize.toFileName());
-            
-            AiAsserts.assertContains(summerize.getFrom(), "Hotel", "Gasthof");
-            AiAsserts.assertContains(summerize.getDocumentType(), "Rechnung");
-            
-            assertThat(summerize.getDocumentNumber()).isEqualTo("207581");
-            assertThat(summerize.getDate()).isEqualTo(LocalDate.parse("2013-12-31"));
-        }
-    }
-    
-    @Test
-    void test_kassenzettel_lidl_ocr_done() throws Exception {
-        var pdfFile = new ClassPathResource("/kassenzettel_lidl_ocr_done.pdf").getFile();
-        try (var pdf = new PdfDocument(pdfFile)) {
-            var text = pdf.readText();
-            System.err.println(text);
-            System.err.println("----");
-            var summerize = subject.summarise(text);
-            System.err.println(summerize);
-            System.err.println(summerize.toFileName());
-            
-            AiAsserts.assertContains(summerize.getFrom(), "lidl");
-            assertThat(summerize.getDocumentType()).containsAnyOf("Kundenbeleg", "Rechnung");
-            
-            AiAsserts.assertContains(summerize.getFileName(), "2018-02-16", "LIDL");
-            assertThat(summerize.getFileName()).containsAnyOf("Kundenbeleg", "Rechnung");
-            
-            assertThat(summerize.getDate()).isEqualTo(LocalDate.parse("2018-02-16"));
-        }
-    }
-    
     //@Test
     void testUseAiOcr() throws Exception {
         var pdfResource = new ClassPathResource("/Musterrechnung_ocr.pdf");
@@ -179,7 +231,7 @@ class SummariseServiceTest extends AbstractSpringTest {
         AiAsserts.assertContains(summerize.getDocumentType(), "Rechnung");
         
         assertThat(summerize.getDocumentNumber()).isEqualTo("207581");
-        assertThat(summerize.getDate()).isEqualTo(LocalDate.parse("2013-12-31"));
+        assertThat(summerize.getDate()).isEqualTo("2013-12-31");
     }
 
 }

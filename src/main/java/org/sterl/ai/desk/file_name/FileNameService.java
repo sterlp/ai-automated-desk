@@ -28,7 +28,7 @@ public class FileNameService {
             if (!destinationDir.exists()) destinationDir.mkdirs();
             var completedPdf = summariseService.summariseAndNamePdf(ocrPdf.out(), destinationDir);
             inPdf.delete();
-            return completedPdf;
+            return completedPdf.result();
         } catch (Exception e) {
             log.error("Failed to process {}", inPdf.getAbsolutePath(), e);
             return null;
