@@ -3,9 +3,7 @@ package org.sterl.ai.desk.summarise;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +13,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -191,21 +190,28 @@ public class SummariseServiceTest extends AbstractSpringTest {
         }
     }
 
-    //@Test
-    void testUseAiOcr() throws Exception {
+    @Test
+    void test_Musterrechnung_AI() throws Exception {
         var pdfResource = new ClassPathResource("/Musterrechnung_ocr.pdf");
         var images = PdfUtil.generateImages(pdfResource, 300);
+
+        try (var pdf = new PdfDocument(pdfResource.getFile())) {
+            var summerize = subject.summarise(images, pdf.readText());
             
-        var summerize = subject.summarise(images);
-        
-        System.err.println(summerize);
-        System.err.println(summerize.toFileName());
-        
-        AiAsserts.assertContains(summerize.getFrom(), "Hotel", "Gasthof");
-        AiAsserts.assertContains(summerize.getDocumentType(), "Rechnung");
-        
-        assertThat(summerize.getDocumentNumber()).isEqualTo("207581");
-        assertThat(summerize.getDate()).isEqualTo("2013-12-31");
+            System.err.println(summerize);
+        }
+    }
+    
+    @Test
+    void test_LIDL_Rechnung_AI() throws Exception {
+        var pdfResource = new ClassPathResource("/kassenzettel_lidl_ocr_done.pdf");
+        var images = PdfUtil.generateImages(pdfResource, 300);
+
+        try (var pdf = new PdfDocument(pdfResource.getFile())) {
+            var summerize = subject.summarise(images, pdf.readText());
+            
+            System.err.println(summerize);
+        }
     }
 
 }

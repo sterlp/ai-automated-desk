@@ -68,17 +68,7 @@ public class SummariseService {
     }
     
     public AiResult<DocumentInfo> summarise(String text) {
-        var system = SystemMessage.builder().text("""
-                You are an AI specialized in document information extraction. 
-                Your task is to analyze the provided text document (e.g., letters, invoices, reminders, delivery notes, insurance statements, settlements) and identify its key elements. 
-                Review your extracted elements and correct them if necessary before generating the final result.
-                The provided user text may contain spelling errors. 
-                It may also contain errors through an OCR software like missing letters or blanks. You should correct it.
-                Don't invent content, use only the informations provided by the user. You can summerize it, if so ensure correctness with the origional text.
-                """
-                + "Use the language of the text for the result. If you are unsure about the language use " + language
-                + documentConverter.getFormat()
-                ).build();
+        var system = systemMessage();
         
         // shorten text to the given token count
         if (text.length() > maxTextLength) text = text.substring(0, maxTextLength);
@@ -93,7 +83,7 @@ public class SummariseService {
         var prompt = new Prompt(Arrays.asList(system, message),
                 OllamaOptions.builder()
                     .format("json")
-                    .model(llmModel) // gpt-oss:20b, gemma3:4b granite3-dense:8b - gpt-oss:20b
+                    .model(llmModel)
                     .build());
         
         var time = System.currentTimeMillis();
@@ -103,6 +93,21 @@ public class SummariseService {
         time = modelTime(result, time);
 
         return new AiResult<>(time, documentConverter.convert(result.getResult().getOutput().getText()));
+    }
+
+    public SystemMessage systemMessage() {
+        var system = SystemMessage.builder().text("""
+                You are an AI specialized in document information extraction. 
+                Your task is to analyze the provided text document (e.g., letters, invoices, reminders, delivery notes, insurance statements, settlements) and identify its key elements. 
+                Review your extracted elements and correct them if necessary before generating the final result.
+                The provided user text may contain spelling errors. 
+                It may also contain errors through an OCR software like missing letters or blanks. You should correct it.
+                Don't invent content, use only the informations provided by the user. You can summerize it, if so ensure correctness with the origional text.
+                """
+                + "Use the language of the text for the result. If you are unsure about the language use " + language
+                + documentConverter.getFormat()
+                ).build();
+        return system;
     }
 
     public long modelTime(ChatResponse result, long defaultMs) {
@@ -117,32 +122,34 @@ public class SummariseService {
     /**
      * Currently very bad results
      */
-    public DocumentInfo summarise(List<BufferedImage> images) {
+    public AiResult<String> summarise(List<BufferedImage> images, String text) {
         var media = new ArrayList<Media>();
         for (var i : images) {
             media.add(new Media(MimeTypeUtils.IMAGE_PNG, PdfUtil.image2Resource(i)));
         }
+        
+        var system = systemMessage();
 
-        var message = UserMessage.builder()
-                .text("""
-              You are an AI specialized in document information extraction. 
-              Your task is to carefully analyze documents (such as letters, invoices, reminders, delivery notes, insurance statements, settlements, etc.) and extract the key elements. 
-              Use the language of the text. Try to find for for each field the correct information. Verify your result before returning it.
-              """ + documentConverter.getFormat())
-                .media(media)
-                .build();
-        var prompt = new Prompt(message,
+        var message = UserMessage.builder().text(text).media(media).build();
+        var prompt = new Prompt(Arrays.asList(system, message),
                 OllamaOptions.builder()
                     .format("json")
-                    .model("granite3.2-vision")
+                    .model(llmModel)
                     .build());
         
-        System.err.println("Reading PDF AI");
+        System.err.println("Reading PDF AI... ");
         var resutText = ollamaChat.call(prompt)
                 .getResult()
                 .getOutput()
                 .getText();
 
-        return documentConverter.convert(resutText);
+        var time = System.currentTimeMillis();
+        var result = ollamaChat.call(prompt);
+        time = System.currentTimeMillis() - time;
+        System.err.println("... done in " + time + "ms");
+        time = modelTime(result, time);
+
+        return new AiResult<>(time, result.getResult().getOutput().getText());
+
     }
 }
