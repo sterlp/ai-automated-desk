@@ -46,11 +46,10 @@ public class DocumentInfo {
     4. Add the creator/sender name.
     5. Add the receiver name (if available).
     6. Include any other key identifiers that make the file name unique and meaningful.
-    7. Keep the total length under 120 characters.
-    8. Ensure the name clearly conveys the document’s purpose and content without ambiguity.
-    9. Verify that all included elements are accurate, relevant, and unique to this document.
+    7. In one or two words the central topic or reason for the document
     
-    The file name shouldn't contain any file extensions. Add only elements you find - don't add place holders, null, or not-found, etc. to the file name.
+    Keep the total length under 130 characters.
+    The name should use the language of the user message and contain the most relevant key elements of the use text.
     */
     private String fileName;
     

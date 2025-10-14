@@ -35,29 +35,12 @@ public class OcrService {
         try (var pdf = new PdfDocument(inPdf)) {
             var txt = pdf.readText();
             if (txt.length() < 10) {
-                return ocrAndReplacePdf(inPdf);
+                return ocrPdf(inPdf);
             }
             log.info("OCR not needed for {}", inPdf.getName());
             return new ReadFile(inPdf, false, null);
         } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    public ReadFile ocrAndReplacePdf(File inPdf) {
-        var ocredPdf = ocrPdf(inPdf);
-        if (ocredPdf.size() > 0) {
-            inPdf.delete();
-            if (ocredPdf.out().renameTo(inPdf)) {
-                return new ReadFile(inPdf, true, ocredPdf.message());
-            } else {
-                log.warn("Failed to rename {}", ocredPdf.out().getAbsolutePath());
-                return ocredPdf;
-            }
-        } else {
-            log.warn("Failed to OCR {}", inPdf.getAbsolutePath());
-            ocredPdf.out().delete();
-            return new ReadFile(inPdf, false, "OCR result is empty:\n" + ocredPdf.message());
         }
     }
     
@@ -94,12 +77,15 @@ public class OcrService {
                 output.delete();
                 throw new RuntimeException("Failed to OCR + " + file.getAbsolutePath() + ":\n" + errorOutput);
             }
+            if (output.length() < 2) {
+                throw new RuntimeException("Output file seems to be empty + " + file.getAbsolutePath() + ":\n" + errorOutput);
+            }
             timer.stop("OCR " + file.getName());
+            return new ReadFile(output, true, errorOutput);
         } catch (Exception e) {
             timer.stop(e);
             if (e instanceof RuntimeException ex) throw ex;
             throw new RuntimeException("Failed to OCR " + file.getAbsolutePath() + ":\n" + errorOutput, e);
         }
-        return new ReadFile(output, true, errorOutput);
     }
 }

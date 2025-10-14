@@ -6,6 +6,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 import org.sterl.ai.desk.metric.MetricService;
 import org.sterl.ai.desk.pdf.PdfDocument;
 
@@ -15,6 +16,10 @@ class OcrServiceTest {
 
     private OcrService subject = new OcrService(new MetricService(new SimpleMeterRegistry()));
 
+    @Test
+    void testOcrCreateTime() throws Exception {
+        System.err.println(new ClassPathResource("/Musterrechnung.pdf").getFile().getAbsoluteFile());
+    }
     @Test
     void testOcr() throws Exception {
         // GIVEN

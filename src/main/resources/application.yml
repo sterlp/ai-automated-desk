@@ -4,13 +4,16 @@ spring:
       observations:
         log-completion: true
     ollama:
-      base-url: http://192.168.178.87:11434 #  http://localhost:11434 # 
+      base-url: http://localhost:11434 #http://192.168.178.87:11434 #   
       chat:
-        model: gemma3:12b # gemma3:4b qwen3 gemma3 llama3.1 granite3.3:8b gemma3:4b # gpt-oss:20b
+        model: gemma3:12b # gemma3:4b # gemma3:4b qwen3 gemma3 llama3.1 granite3.3:8b gemma3:4b # gpt-oss:20b
       init:
         pull-model-strategy: always
         timeout: 300s
         max-retries: 1
+        embedding:
+          additional-models:
+          - mxbai-embed-large
 
 ai-desk:
   docker: /usr/local/bin/docker

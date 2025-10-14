@@ -44,19 +44,20 @@ public class SummariseServiceTest extends AbstractSpringTest {
             var score = new LlmScore();
 
             score.contains(2, fileName, "2013-", "-12-", "-31");
-            score.contains(3, fileName, "rechnung", "207581");
+            score.contains(3, fileName, "rechnung", "207581"); // error in OCR
             score.contains(fileName, "Hotel", "Gasthof", "Stern");
             score.containsNot(fileName, ".", ".pdf");
             
             score.contains(2, fileName, "stern", "207581");
             
             var infos = doc.getDocumentInformation();
-            score.contains(infos.getCreator(), "Hotel", "Gasthof", "Stern", "Pfaffenhausen");
+            score.contains(infos.getCreator(), "SoCon", "GmbH", "Stern", "Pfaffenhausen");
             score.contains(infos.getTitle(), "Hotel", "Rechnung", "Gasthof", "Stern", "207581");
             score.contains(infos.getSubject(), 
                     "Rechnung", "Gasthof", "Stern", "207581", "SEPA",
                     "01.12.2013", "31.12.2013", "Rechnungsnummer", "Betrag", 
-                    "14,03", "701,68", " EUR");
+                    "Rabatt", "10",
+                    "701,68", " EUR");
             
             score.containsNotAny(infos.getSubject(), "Invoice", "expenses");
             score.containsNot(infos.getTitle(), "Invoice");
@@ -113,27 +114,28 @@ public class SummariseServiceTest extends AbstractSpringTest {
     }
     
     /*
-    @ValueSource(strings = {
-            "qwen3:4b", "qwen3:8b", "qwen3:14b",
-            "gemma3:4b", "gemma3:12b",
-            "granite3.3:8b",
-            "deepseek-r1:14b", 
-            "gpt-oss:20b",
-        }
-    )
-    @ValueSource(strings = {
-            "qwen3:4b",
-            "gemma3:4b"
-    }
-            )
-     */
+     * gemma3:4b                   a2af6cc3eb7f    3.3 GB    11 days ago    
+llama3.1:latest             46e0c10c039e    4.9 GB    2 weeks ago    
+qwen3:8b                    500a1f067a9f    5.2 GB    2 weeks ago    
+llama3.1:8b                 46e0c10c039e    4.9 GB    3 weeks ago    
     @ValueSource(strings = {
             "qwen3:4b", "qwen3:8b", "qwen3:14b",
             "gemma3:4b", "gemma3:12b",
             "mistral:7b",
             "granite3.3:8b",
             "llama3.1:8b",
-            "deepseek-r1:14b"}) // 
+            "deepseek-r1:14b",
+            "gpt-oss:20b"}) // 
+     */
+    @ValueSource(strings = {
+            "qwen3:4b", "qwen3:8b",
+            "gemma3:4b", "gemma3:12b",
+            "mistral:7b",
+            "llama3.1:8b",
+            "granite3.3:8b"
+        }
+    )
+
     @ParameterizedTest
     void test_benchmark_LLM(String llm) throws Exception {
         // GIVEN

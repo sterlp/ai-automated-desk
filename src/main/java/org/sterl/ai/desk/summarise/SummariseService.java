@@ -35,7 +35,7 @@ public class SummariseService {
     private String llmModel = null;
     private final String language = "german";
     // make sure only to look at the first page
-    private final int maxTextLength = 4 * 900;
+    private final int maxTextLength = 4 * 1500;
     private final MetricService metricService;
     private final OllamaChatModel ollamaChat;
     private final DocumentConverter documentConverter;
@@ -84,6 +84,7 @@ public class SummariseService {
                 OllamaOptions.builder()
                     .format("json")
                     .model(llmModel)
+                    .temperature(0.4)
                     .build());
         
         var time = System.currentTimeMillis();
@@ -110,7 +111,7 @@ public class SummariseService {
         return system;
     }
 
-    public long modelTime(ChatResponse result, long defaultMs) {
+    static long modelTime(ChatResponse result, long defaultMs) {
         var totalTime = result.getMetadata().get("total-duration");
         var loadTime = result.getMetadata().get("load-duration");
         if (totalTime instanceof Duration t && loadTime instanceof Duration l) {

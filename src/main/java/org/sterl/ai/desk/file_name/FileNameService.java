@@ -23,11 +23,21 @@ public class FileNameService {
                 .replace(sourceDir.getAbsolutePath(), ""));
 
         try {
+            var attributes = FileHelper.readFileAttributes(inPdf.toPath());
+
             var ocrPdf = ocrService.ocrPdfIfNeeded(inPdf);
+            if (!ocrPdf.out().getAbsolutePath().equals(inPdf.getAbsolutePath())) {
+                FileHelper.setAttributes(attributes, ocrPdf.out().toPath());
+                inPdf.delete();
+            }
+
             var destinationDir = new File(FileHelper.toDestinationDir(inPdf, sourceDir, targetDir));
             if (!destinationDir.exists()) destinationDir.mkdirs();
             var completedPdf = summariseService.summariseAndNamePdf(ocrPdf.out(), destinationDir);
-            inPdf.delete();
+            FileHelper.setAttributes(attributes, completedPdf.result().toPath());
+
+            ocrPdf.out().delete();
+            
             return completedPdf.result();
         } catch (Exception e) {
             log.error("Failed to process {}", inPdf.getAbsolutePath(), e);
