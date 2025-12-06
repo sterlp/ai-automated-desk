@@ -35,7 +35,7 @@ public class DocumentConverter implements StructuredOutputConverter<DocumentInfo
                     // If you find a company name and the address of the company which created the document, include both.
                     private String from;
                     // The receiver’s company/organization name. never a number alone, but may contain a number in the zip.
-                    // This could be null, if the document has no receiver.
+                    // This could be null, if the document has no receiver. A letter or invoice is typically from somebody to somebody.
                     private String to;
                     
                     // The date of the letter or document use ISO format as Java LocalDate format "YYYY-MM-DD".

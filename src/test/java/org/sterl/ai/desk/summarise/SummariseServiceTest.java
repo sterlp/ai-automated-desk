@@ -31,6 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 public class SummariseServiceTest extends AbstractSpringTest {
 
     @Autowired
+    private ReadDocumentAgent readDocumentAgent;
+    @Autowired
     private SummariseService subject;
     
     final static LlmTestDocument HOTEL_STERN_MUSTER_RECHNUNG = 
@@ -110,6 +112,23 @@ public class SummariseServiceTest extends AbstractSpringTest {
         subject.setLlmModel(null);
     }
     
+    @Test
+    void test_Musterrechnung_AI() throws Exception {
+        var llm = "gemma3:12b";
+        var images = PdfUtil.generateImages(HOTEL_STERN_MUSTER_RECHNUNG.getPdf(), 300);
+        
+        subject.setLlmModel(llm);
+        var result = subject.summarise(images);
+        System.err.println(result.result());
+        
+        System.err.println("---");
+        
+        readDocumentAgent.setLlmModel(llm);
+        var docText = readDocumentAgent.read(images);
+        result = subject.summarise(docText.result());
+        System.err.println(result.result());
+    }
+    
     /*
      * gemma3:4b                   a2af6cc3eb7f    3.3 GB    11 days ago    
 llama3.1:latest             46e0c10c039e    4.9 GB    2 weeks ago    
@@ -150,13 +169,13 @@ llama3.1:8b                 46e0c10c039e    4.9 GB    3 weeks ago
             // THEN
             var llmStats = new LlmStatistics();
             docStats.put(doc.getName(), llmStats);
+            
             final long start = System.currentTimeMillis();
             try {
                 var result = subject.summariseAndNamePdf(doc.getPdfFile(), destination);
                 var resultFile = result.result();
                 
                 // THEN check file name
-                
                 try (var pdf = new PdfDocument(resultFile)) {
                     var score = doc.score(pdf);
                     llmStats.addScore(llm, score);

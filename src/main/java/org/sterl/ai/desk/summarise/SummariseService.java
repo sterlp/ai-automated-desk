@@ -3,7 +3,6 @@ package org.sterl.ai.desk.summarise;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -67,18 +66,29 @@ public class SummariseService {
     }
     
     public AiResult<DocumentInfo> summarise(String text) {
-        var system = systemMessage();
         
         // shorten text to the given token count
         if (text.length() > maxTextLength) text = text.substring(0, maxTextLength);
-        
-
         // shorten text to the given token count
         if (text.length() > maxTextLength) {
             text = text.substring(0, maxTextLength);
         }
 
         var message = UserMessage.builder().text(text).build();
+
+        return runUserPromt(message);
+    }
+    
+    public AiResult<DocumentInfo> summarise(List<BufferedImage> images) {
+        var media = images.stream()
+            .map(i -> new Media(MimeTypeUtils.IMAGE_PNG, PdfUtil.image2Resource(i)))
+            .toList();
+        var message = UserMessage.builder().text("").media(media).build();
+        return runUserPromt(message);
+    }
+
+    private AiResult<DocumentInfo> runUserPromt(UserMessage message) {
+        var system = systemMessage();
         var prompt = new Prompt(Arrays.asList(system, message),
                 OllamaOptions.builder()
                     .format("json")
@@ -108,34 +118,5 @@ public class SummariseService {
                 + documentConverter.getFormat()
                 ).build();
         return system;
-    }
-
-    public AiResult<String> read(List<BufferedImage> images) {
-        var media = images.stream()
-                .map(i -> new Media(MimeTypeUtils.IMAGE_PNG, PdfUtil.image2Resource(i)))
-                .toList();
-
-        var system = SystemMessage.builder().text("""
-                You main goal is to read documents preceise as possible provided by the user to you.
-                Dont add any informations which are not part of the image. Use only the data given to you by the user.
-                Clarify in one word at the start what kind of document it is e.g., letters, invoices, reminders, delivery notes, insurance statements, settlements, etc.
-                If it is an invoice or letter ensure to clearly seperate from the sender and the receiver of this document in you result.
-                Return the whole read document - everything you can read - in a well understanable structure.
-                Always use the language of the document provided to you by the user.
-                """
-                ).build();
-
-        var message = UserMessage.builder().text("").media(media).build();
-        var prompt = new Prompt(Arrays.asList(system, message),
-                OllamaOptions.builder()
-                    .model(llmModel)
-                    .build());
-        
-        var time = System.currentTimeMillis();
-        var result = ollamaChat.call(prompt);
-        time = System.currentTimeMillis() - time;
-        time = AIHelper.modelTime(result, time);
-
-        return new AiResult<>(time, result.getResult().getOutput().getText());
     }
 }

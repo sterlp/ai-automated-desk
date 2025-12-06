@@ -24,7 +24,7 @@ import lombok.Setter;
 public class ReadDocumentAgent {
 
     @Setter
-    private String llmModel = "gemma3:27b";
+    private String llmModel = "gemma3:12b";
     private final OllamaChatModel ollamaChat;
     
     public AiResult<String> read(List<BufferedImage> images) {

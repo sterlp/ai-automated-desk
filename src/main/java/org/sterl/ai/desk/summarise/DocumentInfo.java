@@ -15,6 +15,7 @@ public class DocumentInfo {
     private String from;
     // The receiver’s company/organization name. never a number alone, but may contain a number in the zip.
     // This could be null, if the document has no receiver.
+    // A letter or invoice is typically from somebody to somebody.
     private String to;
     
     // The date of the letter or document use ISO format as Java LocalDate format "YYYY-MM-DD".
@@ -34,8 +35,8 @@ public class DocumentInfo {
      */
     private String summary;
     /**
-    A short title, either directly from the document, if available, or create one max 200 characters
-    */
+     * A short title, either directly from the document, if available, or create one max 200 characters
+     */
     private String title;
     /**
     Generate a concise, unique, and descriptive file name for this document following these rules:
