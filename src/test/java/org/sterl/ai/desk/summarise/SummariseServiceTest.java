@@ -1,7 +1,5 @@
 package org.sterl.ai.desk.summarise;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -19,7 +17,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.sterl.ai.desk.AbstractSpringTest;
-import org.sterl.ai.desk.AiAsserts;
 import org.sterl.ai.desk.pdf.PdfDocument;
 import org.sterl.ai.desk.pdf.PdfUtil;
 import org.sterl.ai.desk.shared.FileHelper;
@@ -189,32 +186,6 @@ llama3.1:8b                 46e0c10c039e    4.9 GB    3 weeks ago
             
             FileHelper.appendLine(BENCHMARK_FILE.toFile(), "## " + e.getKey());
             FileHelper.appendLine(BENCHMARK_FILE.toFile(), e.getValue().toString());
-        }
-    }
-
-    @Test
-    void test_Musterrechnung_AI() throws Exception {
-        var pdfResource = new ClassPathResource("/Musterrechnung_ocr.pdf");
-        var images = PdfUtil.generateImages(pdfResource, 300);
-
-        subject.setLlmModel("gemma3:4b");
-        try (var pdf = new PdfDocument(pdfResource.getFile())) {
-            var text = subject.read(images);
-            System.err.println(text);
-            var summerize = subject.summarise(text.result());
-            System.err.println(summerize);
-        }
-    }
-    
-    @Test
-    void test_LIDL_Rechnung_AI() throws Exception {
-        var pdfResource = new ClassPathResource("/kassenzettel_lidl_ocr_done.pdf");
-        var images = PdfUtil.generateImages(pdfResource, 300);
-
-        try (var pdf = new PdfDocument(pdfResource.getFile())) {
-            var summerize = subject.summarise(images, pdf.readText());
-            
-            System.err.println(summerize);
         }
     }
 

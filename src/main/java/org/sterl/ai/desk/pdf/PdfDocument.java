@@ -25,7 +25,6 @@ import org.sterl.ai.desk.summarise.DocumentInfo;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor

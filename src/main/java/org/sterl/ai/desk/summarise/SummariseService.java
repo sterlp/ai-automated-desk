@@ -3,14 +3,12 @@ package org.sterl.ai.desk.summarise;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.ollama.OllamaChatModel;
@@ -20,6 +18,7 @@ import org.springframework.util.MimeTypeUtils;
 import org.sterl.ai.desk.metric.MetricService;
 import org.sterl.ai.desk.pdf.PdfDocument;
 import org.sterl.ai.desk.pdf.PdfUtil;
+import org.sterl.ai.desk.shared.AIHelper;
 import org.sterl.ai.desk.summarise.mode.AiResult;
 
 import lombok.RequiredArgsConstructor;
@@ -91,7 +90,7 @@ public class SummariseService {
         var result = ollamaChat.call(prompt);
         time = System.currentTimeMillis() - time;
 
-        time = modelTime(result, time);
+        time = AIHelper.modelTime(result, time);
 
         return new AiResult<>(time, documentConverter.convert(result.getResult().getOutput().getText()));
     }
@@ -111,45 +110,6 @@ public class SummariseService {
         return system;
     }
 
-    static long modelTime(ChatResponse result, long defaultMs) {
-        var totalTime = result.getMetadata().get("total-duration");
-        var loadTime = result.getMetadata().get("load-duration");
-        if (totalTime instanceof Duration t && loadTime instanceof Duration l) {
-            return t.minus(l).toMillis();
-        }
-        return defaultMs;
-    }
-    
-    /**
-     * Currently very bad results
-     */
-    public AiResult<String> summarise(List<BufferedImage> images, String text) {
-        var media = new ArrayList<Media>();
-        for (var i : images) {
-            media.add(new Media(MimeTypeUtils.IMAGE_PNG, PdfUtil.image2Resource(i)));
-        }
-        
-        var system = systemMessage();
-
-        var message = UserMessage.builder().text(text).media(media).build();
-        var prompt = new Prompt(Arrays.asList(system, message),
-                OllamaOptions.builder()
-                    .format("json")
-                    .model(llmModel)
-                    .build());
-        
-        System.err.println("Reading PDF AI... ");
-
-        var time = System.currentTimeMillis();
-        var result = ollamaChat.call(prompt);
-        time = System.currentTimeMillis() - time;
-        System.err.println("... done in " + time + "ms");
-        time = modelTime(result, time);
-
-        return new AiResult<>(time, result.getResult().getOutput().getText());
-
-    }
-    
     public AiResult<String> read(List<BufferedImage> images) {
         var media = images.stream()
                 .map(i -> new Media(MimeTypeUtils.IMAGE_PNG, PdfUtil.image2Resource(i)))
@@ -174,7 +134,7 @@ public class SummariseService {
         var time = System.currentTimeMillis();
         var result = ollamaChat.call(prompt);
         time = System.currentTimeMillis() - time;
-        time = modelTime(result, time);
+        time = AIHelper.modelTime(result, time);
 
         return new AiResult<>(time, result.getResult().getOutput().getText());
     }
