@@ -24,7 +24,7 @@ public class AbstractSpringTest {
     protected final static MkDocksTable SUMMARY_TABLE = new MkDocksTable(SUMMARY_FILE);
     
     @BeforeAll
-    public static void beforeAll() throws IOException {
+    static void beforeAll() throws IOException {
         if (Path.of(PDF_OUT_DIR).toFile().exists()) {
             FileUtils.cleanDirectory(Path.of(PDF_OUT_DIR).toFile());
         }
@@ -37,7 +37,7 @@ public class AbstractSpringTest {
     }
     
     @AfterAll
-    public static void afterAll() {
+    static void afterAll() {
         SUMMARY_TABLE.close();
     }
 

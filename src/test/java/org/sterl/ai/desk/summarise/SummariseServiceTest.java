@@ -100,7 +100,7 @@ public class SummariseServiceTest extends AbstractSpringTest {
         );
 
     @BeforeAll
-    public static void beforeAll() throws IOException {
+    static void beforeAll() throws IOException {
         initHeader(Stream.concat(
                 Stream.of("LLM"),
                 TEST_DOCS.stream().map(h -> h.getName())
@@ -109,7 +109,7 @@ public class SummariseServiceTest extends AbstractSpringTest {
     }
     
     @BeforeEach
-    public void before() {
+    void before() {
         subject.setLlmModel(null);
     }
     
@@ -197,9 +197,11 @@ llama3.1:8b                 46e0c10c039e    4.9 GB    3 weeks ago
         var pdfResource = new ClassPathResource("/Musterrechnung_ocr.pdf");
         var images = PdfUtil.generateImages(pdfResource, 300);
 
+        subject.setLlmModel("gemma3:4b");
         try (var pdf = new PdfDocument(pdfResource.getFile())) {
-            var summerize = subject.summarise(images, pdf.readText());
-            
+            var text = subject.read(images);
+            System.err.println(text);
+            var summerize = subject.summarise(text.result());
             System.err.println(summerize);
         }
     }

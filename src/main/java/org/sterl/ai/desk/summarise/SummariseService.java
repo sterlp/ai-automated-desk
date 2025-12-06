@@ -139,10 +139,6 @@ public class SummariseService {
                     .build());
         
         System.err.println("Reading PDF AI... ");
-        var resutText = ollamaChat.call(prompt)
-                .getResult()
-                .getOutput()
-                .getText();
 
         var time = System.currentTimeMillis();
         var result = ollamaChat.call(prompt);
@@ -152,5 +148,34 @@ public class SummariseService {
 
         return new AiResult<>(time, result.getResult().getOutput().getText());
 
+    }
+    
+    public AiResult<String> read(List<BufferedImage> images) {
+        var media = images.stream()
+                .map(i -> new Media(MimeTypeUtils.IMAGE_PNG, PdfUtil.image2Resource(i)))
+                .toList();
+
+        var system = SystemMessage.builder().text("""
+                You main goal is to read documents preceise as possible provided by the user to you.
+                Dont add any informations which are not part of the image. Use only the data given to you by the user.
+                Clarify in one word at the start what kind of document it is e.g., letters, invoices, reminders, delivery notes, insurance statements, settlements, etc.
+                If it is an invoice or letter ensure to clearly seperate from the sender and the receiver of this document in you result.
+                Return the whole read document - everything you can read - in a well understanable structure.
+                Always use the language of the document provided to you by the user.
+                """
+                ).build();
+
+        var message = UserMessage.builder().text("").media(media).build();
+        var prompt = new Prompt(Arrays.asList(system, message),
+                OllamaOptions.builder()
+                    .model(llmModel)
+                    .build());
+        
+        var time = System.currentTimeMillis();
+        var result = ollamaChat.call(prompt);
+        time = System.currentTimeMillis() - time;
+        time = modelTime(result, time);
+
+        return new AiResult<>(time, result.getResult().getOutput().getText());
     }
 }
