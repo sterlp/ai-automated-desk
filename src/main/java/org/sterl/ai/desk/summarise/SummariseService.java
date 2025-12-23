@@ -11,7 +11,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 import org.sterl.ai.desk.metric.MetricService;
@@ -90,10 +90,11 @@ public class SummariseService {
     private AiResult<DocumentInfo> runUserPromt(UserMessage message) {
         var system = systemMessage();
         var prompt = new Prompt(Arrays.asList(system, message),
-                OllamaOptions.builder()
+                OllamaChatOptions.builder()
                     .format("json")
                     .model(llmModel)
                     .temperature(0.4)
+                    .enableThinking()
                     .build());
         
         var time = System.currentTimeMillis();

@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.sterl.ai.desk.AbstractSpringTest;
 import org.sterl.ai.desk.pdf.PdfDocument;
 import org.sterl.ai.desk.pdf.PdfUtil;

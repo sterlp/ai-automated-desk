@@ -9,7 +9,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 import org.sterl.ai.desk.pdf.PdfUtil;
@@ -34,8 +34,9 @@ public class ReadDocumentAgent {
 
         var system = SystemMessage.builder().text("""
                 You goal is to read documents preceise as possible provided by the user to you.
-                Dont add any informations which are not part of the image. 
-                Use only the data given to you by the user.
+                Dont add any informations which are not part of the given information.
+                Don't leave anything out, read the whole document, from start to end. 
+                Use only informations given by the user, don't add any opinion or anything else.
                 Return the whole read document - everything you can read.
                 Use a well understanable structure - which represents the document as close as possible.
                 Use markdown to represent the document structure e.g. tables headlines etc.
@@ -48,8 +49,10 @@ public class ReadDocumentAgent {
 
         var message = UserMessage.builder().text("").media(media).build();
         var prompt = new Prompt(Arrays.asList(system, message),
-                OllamaOptions.builder()
+                OllamaChatOptions.builder()
                     .model(llmModel)
+                    .temperature(0.4)
+                    .enableThinking()
                     .build());
         
         var time = System.currentTimeMillis();
