@@ -1,27 +1,38 @@
 package org.sterl.ai.desk.summarise;
 
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.reader.tika.TikaDocumentReader;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.PathResource;
 import org.sterl.ai.desk.AbstractSpringTest;
 import org.sterl.ai.desk.embedding.EmbeddingAgent;
+import org.sterl.ai.desk.file_reader.ReadImageAgent;
 import org.sterl.ai.desk.pdf.PdfUtil;
 import org.sterl.ai.desk.shared.VectorHelper;
 
 class ReadDocumentAgentTest extends AbstractSpringTest {
     @Autowired
-    private ReadDocumentAgent subject;
+    private ReadImageAgent subject;
     
     @Autowired
     private EmbeddingAgent embeddingAgent;
     
     @Test
-    void test_deepseek_vs_gemma3() throws Exception {
+    void test_ministral3_vs_gemma3() throws Exception {
         
         var musterrechnungMd = new ClassPathResource("musterrechnung.md");
         var sollVector = embeddingAgent.toVector(new String(musterrechnungMd.getContentAsByteArray()));
@@ -33,19 +44,21 @@ class ReadDocumentAgentTest extends AbstractSpringTest {
         subject.setLlmModel("gemma3:12b");
         subject.read(images);
         var gemma = subject.read(images);
+        System.err.println(gemma);
         var gemmaVector = embeddingAgent.toVector(gemma.result());
         
-        System.out.println("deepseek-ocr");
-        subject.setLlmModel("deepseek-ocr");
+        System.out.println("ministral-3:14b-instruct-2512-q8_0");
+        subject.setLlmModel("ministral-3:14b-instruct-2512-q8_0");
         subject.read(images);
-        var deepseek = subject.read(images);
-        var deepseekVector = embeddingAgent.toVector(deepseek.result());
+        var ministral3 = subject.read(images);
+        System.err.println(ministral3);
+        var deepseekVector = embeddingAgent.toVector(ministral3.result());
         
         System.err.println("cosineSimilarity: gemma " + 
                 VectorHelper.cosineSimilarity(gemmaVector, sollVector)
             );
         
-        System.err.println("cosineSimilarity: deepseek " + 
+        System.err.println("cosineSimilarity: ministral3 " + 
                 VectorHelper.cosineSimilarity(deepseekVector, sollVector)
             );
         
@@ -77,16 +90,17 @@ class ReadDocumentAgentTest extends AbstractSpringTest {
     }
     
     @ParameterizedTest
-    @ValueSource(strings = {"gemma3:12b", "deepseek-ocr"})
+    @ValueSource(strings = {"gemma3:12b", "deepseek-ocr", "ministral-3:14b-instruct-2512-q8_0"})
     void test_LIDL_Rechnung_AI(String llm) throws Exception {
         var pdfResource = new ClassPathResource("/kassenzettel_lidl_ocr_done.pdf");
         var images = PdfUtil.generateImages(pdfResource, 300);
 
         subject.setLlmModel(llm);
         subject.read(images);
-        var summerize = subject.read(images);
         System.err.println(llm);
+        var summerize = subject.read(images);
         System.err.println(summerize.result());
+        System.err.println("-------------------");
     }
     
     

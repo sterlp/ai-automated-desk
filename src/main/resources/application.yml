@@ -1,10 +1,21 @@
 spring:
+  neo4j:
+    uri: neo4j://127.0.0.1:7687
+    authentication:
+      username: neo4j
+      password: password
   ai:
+    vectorstore:
+      neo4j:
+        initialize-schema: true
+        embedding-dimension: 1024
     chat:
       observations:
-        log-completion: true
+        log-completion: false
     ollama:
-      base-url: http://localhost:11434 # http://192.168.178.87:11434 # 
+      base-url: http://localhost:11434 # http://192.168.178.87:11434 #
+      embedding:
+        model: bge-m3:latest
       chat:
         model: gemma3:12b # gemma3:4b # gemma3:4b qwen3 gemma3 llama3.1 granite3.3:8b gemma3:4b # gpt-oss:20b
       init:
@@ -13,7 +24,9 @@ spring:
         max-retries: 1
         embedding:
           additional-models:
-          - mxbai-embed-large
+          - bge-m3:latest
+
+
 
 ai-desk:
   docker: /usr/local/bin/docker

@@ -55,7 +55,7 @@ public class SummariseService {
                 inPdf.save(pdfOutFile);
                 
                 log.info("Finished {} and saved as {}", inPdfFile.getName(), pdfOutFile.getAbsolutePath());
-                return new AiResult<>(aiResult.timeInMs(), pdfOutFile);
+                return new AiResult<>(aiResult.timeInMs(), llmModel, pdfOutFile);
             } else {
                 throw new RuntimeException("Failed to generate name for "
                     + inPdfFile.getName() + " - result was "
@@ -103,7 +103,7 @@ public class SummariseService {
 
         time = AIHelper.modelTime(result, time);
 
-        return new AiResult<>(time, documentConverter.convert(result.getResult().getOutput().getText()));
+        return new AiResult<>(time, llmModel, documentConverter.convert(result.getResult().getOutput().getText()));
     }
 
     public SystemMessage systemMessage() {

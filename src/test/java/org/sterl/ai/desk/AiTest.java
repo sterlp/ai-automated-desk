@@ -3,6 +3,7 @@ package org.sterl.ai.desk;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class AiTest extends AbstractSpringTest {
@@ -30,6 +31,8 @@ class AiTest extends AbstractSpringTest {
         // Evaluate and select the best variant
         String output = chatClient
                 .prompt()
+                .options(OllamaChatOptions.builder()
+                        .build())
                 .user(u -> u.text("""
                         Please perform BLEU (Bilingual Evaluation Understudy) evaluation on the following variants:
                         ----

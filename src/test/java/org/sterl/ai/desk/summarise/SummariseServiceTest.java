@@ -16,6 +16,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.sterl.ai.desk.AbstractSpringTest;
+import org.sterl.ai.desk.file_reader.ReadImageAgent;
 import org.sterl.ai.desk.pdf.PdfDocument;
 import org.sterl.ai.desk.pdf.PdfUtil;
 import org.sterl.ai.desk.shared.FileHelper;
@@ -30,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 public class SummariseServiceTest extends AbstractSpringTest {
 
     @Autowired
-    private ReadDocumentAgent readDocumentAgent;
+    private ReadImageAgent readImageAgent;
     @Autowired
     private SummariseService subject;
     
@@ -122,8 +123,8 @@ public class SummariseServiceTest extends AbstractSpringTest {
         
         System.err.println("---");
         
-        readDocumentAgent.setLlmModel(llm);
-        var docText = readDocumentAgent.read(images);
+        readImageAgent.setLlmModel(llm);
+        var docText = readImageAgent.read(images);
         result = subject.summarise(docText.result());
         System.err.println(result.result());
     }
