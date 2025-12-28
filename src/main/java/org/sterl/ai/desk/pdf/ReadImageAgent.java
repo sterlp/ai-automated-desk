@@ -1,4 +1,4 @@
-package org.sterl.ai.desk.file_reader;
+package org.sterl.ai.desk.pdf;
 
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
@@ -12,7 +12,6 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
-import org.sterl.ai.desk.pdf.PdfUtil;
 import org.sterl.ai.desk.shared.AIHelper;
 import org.sterl.ai.desk.summarise.mode.AiResult;
 

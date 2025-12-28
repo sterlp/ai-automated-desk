@@ -20,8 +20,8 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.PathResource;
 import org.sterl.ai.desk.AbstractSpringTest;
 import org.sterl.ai.desk.embedding.EmbeddingAgent;
-import org.sterl.ai.desk.file_reader.ReadImageAgent;
 import org.sterl.ai.desk.pdf.PdfUtil;
+import org.sterl.ai.desk.pdf.ReadImageAgent;
 import org.sterl.ai.desk.shared.VectorHelper;
 
 class ReadDocumentAgentTest extends AbstractSpringTest {

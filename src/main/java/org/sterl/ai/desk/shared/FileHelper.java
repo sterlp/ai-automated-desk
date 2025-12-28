@@ -9,11 +9,42 @@ import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.apache.commons.io.FilenameUtils;
 
 public class FileHelper {
+    public static Map<String, Object> uniqueFileMatchMetaData(Path filePath) {
+        var result = new LinkedHashMap<String, Object>();
+        var f = filePath.toFile();
+        var fileName = filePath.getFileName().toString();
+        var lastMod = new Date(f.lastModified());
+        
+        result.put("source", fileName);
+        result.put("length", Long.valueOf(f.length()));
+        result.put("last_modified", lastMod.toInstant().toString());
+        result.put("year",  lastMod.getYear() + 1900);
+        return result;
+    }
+    
+    public static Map<String, Object> fileMetaData(Path filePath) {
+        var result = uniqueFileMatchMetaData(filePath);
+        var fileName = filePath.getFileName().toString();
+        result.put("path", filePath.toString());
+        result.put("type", FilenameUtils.getExtension(fileName));
+        result.put("name", FilenameUtils.getBaseName(fileName));
+        return result;
+    }
+
+    public static Map<String, Object> fileMetaData(Path filePath, Path context) {
+        var result = fileMetaData(filePath);
+        var docPath = filePath.getParent();
+        result.put("relative_path", context.relativize(docPath).toString());
+        return result;
+    }
 
     public static BasicFileAttributeView readFileAttributeView(Path source) throws IOException {
         // LinkOption.NOFOLLOW_LINKS?
