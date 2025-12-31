@@ -1,40 +1,37 @@
 package org.sterl.ai.desk.config;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
 
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
-@Component
+@Configuration
 @ToString(of = {"source", "destination"})
 @Slf4j
 public class AiDeskConfig {
 
-    @Value("${ai-desk.file.source:./}")
-    private String source;
-    @Value("${ai-desk.file.destination:./}")
-    private String destination;
+    @Value("${ai-desk.file-rename.source:./}")
+    @Getter
+    private Path source;
+    @Getter
+    @Value("${ai-desk.file-rename.destination:./}")
+    private Path destination;
     
-    @Getter
-    private File sourceDir;
-    @Getter
-    private File destinationDir;
-
     @PostConstruct
-    void init() {
-        sourceDir = new File(source);
-        destinationDir = new File(destination);
-        if (hasSourceDir() && !destinationDir.exists()) destinationDir.mkdirs();
-        log.info("Source dir:      " + sourceDir.getAbsolutePath());
-        log.info("Destination dir: " + destinationDir.getAbsolutePath());
+    void init() throws IOException {
+        if (!Files.isDirectory(destination)) Files.createDirectories(destination);
+        log.info("Source dir:      {}" + source);
+        log.info("Destination dir: {}" + destination);
     }
     
-    public boolean hasSourceDir() {
-        return sourceDir.exists() && sourceDir.isDirectory();
+    public boolean hasPdfNameFiles() {
+        return Files.isDirectory(source) && Files.isDirectory(destination) && Files.isWritable(destination);
     }
 }

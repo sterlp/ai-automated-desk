@@ -112,7 +112,6 @@ public class PdfDocument implements Closeable {
         if (Strings.notBlank(fileMetaData.getSummary())) info.setSubject(fileMetaData.getSummary());
         
         info.setKeywords(fileMetaData.keyWords());
-        
         document.setDocumentInformation(info);
     }
     public PDDocumentInformation getDocumentInformation() {

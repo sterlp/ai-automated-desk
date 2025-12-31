@@ -30,6 +30,10 @@ public class FileHelper {
         return result;
     }
     
+    public static String getExtension(Path path) {
+        return FilenameUtils.getExtension(path.toString());
+    }
+    
     public static Map<String, Object> fileMetaData(Path filePath) {
         var result = uniqueFileMatchMetaData(filePath);
         var fileName = filePath.getFileName().toString();
