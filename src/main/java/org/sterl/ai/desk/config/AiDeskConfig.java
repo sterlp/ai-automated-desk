@@ -23,6 +23,8 @@ public class AiDeskConfig {
     @Getter
     @Value("${ai-desk.file-rename.destination:./}")
     private Path destination;
+    @Value("${ai-desk.docker:docker}")
+    private String docker = "ws docker";
     
     @PostConstruct
     void init() throws IOException {
