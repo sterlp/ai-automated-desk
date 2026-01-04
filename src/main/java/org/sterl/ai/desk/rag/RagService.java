@@ -15,8 +15,10 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class RagService {
+    private final List<Character> DEFAULT_PUNCTUATION_MARKS = List.of('.', '?', '!', '\n');
     private final Neo4jVectorStore vectorStore;
-    private final TokenTextSplitter splitter = new TokenTextSplitter(7000, 1000, 500, 5000, true);
+    private final TokenTextSplitter splitter = new TokenTextSplitter(
+            7000, 1000, 500, 5000, true);
     
     private final RagNeo4jRepository ragRepository;
     

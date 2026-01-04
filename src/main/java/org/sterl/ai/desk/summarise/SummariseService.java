@@ -6,12 +6,17 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.ResponseFormat;
+import org.springframework.ai.openai.api.ResponseFormat.Type;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 import org.sterl.ai.desk.metric.MetricService;
@@ -35,11 +40,11 @@ public class SummariseService {
     // make sure only to look at the first page
     private final int maxTextLength = 4 * 1500;
     private final MetricService metricService;
-    private final OllamaChatModel ollamaChat;
+    private final ChatModel chatModel;
     private final DocumentConverter documentConverter;
     
     public AiResult<File> summariseAndNamePdf(File inPdfFile, File outDir) throws IOException {
-        var timer = metricService.timer("summarisePdf", getClass());
+        var timer = metricService.start("summarisePdf", getClass());
         
         AiResult<DocumentInfo> aiResult = null;
         try (var inPdf = new PdfDocument(inPdfFile)) {
@@ -88,36 +93,49 @@ public class SummariseService {
     }
 
     private AiResult<DocumentInfo> runUserPromt(UserMessage message) {
-        var system = systemMessage();
-        var prompt = new Prompt(Arrays.asList(system, message),
-                OllamaChatOptions.builder()
-                    .format("json")
-                    .model(llmModel)
-                    .temperature(0.4)
-                    .enableThinking()
-                    .build());
-        
+
         var time = System.currentTimeMillis();
-        var result = ollamaChat.call(prompt);
+
+        System.err.println("Calling " + llmModel);
+        var result = ChatClient.create(chatModel)
+            .prompt()
+            .system(systemMessage())
+            .messages(message)
+            .options(OpenAiChatOptions.builder()
+                .temperature(0.4)
+                .model(llmModel)
+                .responseFormat(
+                    new ResponseFormat(Type.JSON_SCHEMA, documentConverter.getFormat()
+                    )
+                )
+                .build()
+            )
+            .call();
+
+        System.err.println(result.content());
         time = System.currentTimeMillis() - time;
+        time = AIHelper.modelTime(result.chatResponse(), time);
 
-        time = AIHelper.modelTime(result, time);
-
-        return new AiResult<>(time, llmModel, documentConverter.convert(result.getResult().getOutput().getText()));
+        return new AiResult<>(
+            time,
+            llmModel,
+            result.entity(DocumentInfo.class)
+        );
     }
 
-    public SystemMessage systemMessage() {
-        var system = SystemMessage.builder().text("""
+    public String systemMessage() {
+        return """
                 You are an AI specialized in document information extraction. 
                 Your task is to analyze the provided text document (e.g., letters, invoices, reminders, delivery notes, insurance statements, settlements) and identify its key elements. 
                 Review your extracted elements and correct them if necessary before generating the final result.
                 The provided user text may contain spelling errors. 
                 It may also contain errors through an OCR software like missing letters or blanks. You should correct it.
                 Don't invent content, use only the informations provided by the user. You can summerize it, if so ensure correctness with the origional text.
+                Do not include any explanations.
+                Only provide a RFC8259 compliant JSON response following this format without deviation.
+                The data structure for the JSON object should match this Java class "DocumentInfo" with the properties:
                 """
                 + "Use the language of the text for the result. If you are unsure about the language use " + language
-                + documentConverter.getFormat()
-                ).build();
-        return system;
+                + documentConverter.getFormat();
     }
 }

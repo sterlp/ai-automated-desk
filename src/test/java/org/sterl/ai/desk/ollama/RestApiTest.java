@@ -1,13 +1,15 @@
 package org.sterl.ai.desk.ollama;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.sterl.ai.desk.pdf.PdfDocument;
 import org.sterl.ai.desk.summarise.DocumentConverter;
 
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import reactor.netty.http.client.HttpClient;
 
 /**
 ### granite3.3:8b
@@ -32,54 +35,72 @@ This is a invoice from Hotel-Gasthof Stern dated 28.12.2013 for various supplies
 class RestApiTest {
 
     private ObjectMapper mapper = new ObjectMapper();
+    private DocumentConverter converter = new DocumentConverter(mapper);
 
     @Test
     void test() throws Exception {
         var rest = new RestTemplateBuilder()
-                .rootUri("http://localhost:11434/api")
+                .rootUri("http://localhost:1234/v1")
+                .connectTimeout(Duration.ofSeconds(2))
+                .readTimeout(Duration.ofSeconds(20))
+                .build();
+        
+        var restClient = WebClient.builder()
+                .baseUrl("http://localhost:1234/v1")
+                .clientConnector(new ReactorClientHttpConnector())
                 .build();
         
         var pdfFile = new ClassPathResource("/Musterrechnung_ocr.pdf").getFile();
         
-        var request = new OllamaRequest("granite3.3:8b");
+        var request = new AiRequest(null);
+        request.setFormat(converter.getFormat());
         request.system("""
             You are an AI specialized in document information extraction. 
             Your task is to analyze the provided text document (e.g., letters, invoices, reminders, delivery notes, insurance statements, settlements) and identify its key elements. 
             Review your extracted elements and correct them if necessary before generating the final result.
             Try to find for for each field the correct information. 
             Verify your result before returning it.
-            """
-            + "Use the language of the text for the result. If you are unsure about the language use German."
-            + new DocumentConverter(mapper).getFormat());
+            Use the language of the text for the result. If you are unsure about the language use German.
+            """);
         
         try(var pdf = new PdfDocument(pdfFile)) {
             request.user(pdf.readText());
         }
 
-        var r = rest.postForEntity("/chat", request, String.class);
-        
+        /*
+        var r = rest.postForEntity("/chat/completions", request, String.class);
         System.err.println(r.getBody());
+         */
+        restClient.post()
+            .uri("/chat/completions")
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .retrieve()
+            .bodyToFlux(String.class)
+            .doOnNext(s -> System.err.println(s))
+            .blockLast();
     }
     
     @Data
     @RequiredArgsConstructor
-    static class OllamaRequest {
+    static class AiRequest {
         private final String model;
         private List<Message> messages = new ArrayList<>();
-        private boolean stream = false;
-        // json
-        private String format = "json";
+        private boolean stream = true;
+        // e.g. json or json schema
+        private String format = null;
         
-        public OllamaRequest addMessage(Message message) {
+        public AiRequest addMessage(Message message) {
             this.messages.add(message);
             return this;
         }
         
-        public OllamaRequest user(String message) {
+        public AiRequest user(String message) {
             this.messages.add(Message.user(message));
             return this;
         }
-        public OllamaRequest system(String message) {
+        public AiRequest system(String message) {
             this.messages.add(Message.system(message));
             return this;
         }
@@ -88,13 +109,27 @@ class RestApiTest {
     // Role: system, user, assistant, or tool
     // {"role": "control", "content": "thinking"},
     record Message(String role, String content) {
-        public final static Message GRANITE_THINK = new Message("control", "content");
+        public enum RoleStrings {
+            system,
+            user,
+            assistant,
+            control,
+            content,
+            thinking
+        }
+        
+        public Message(RoleStrings role, String message) {
+            this(role.toString(), message);
+        }
         
         public static Message user(String value) {
-            return new Message("user", value);
+            return new Message(RoleStrings.user, value);
         }
         public static Message system(String value) {
-            return new Message("system", value);
+            return new Message(RoleStrings.system, value);
+        }
+        public static Message assistant(String value) {
+            return new Message(RoleStrings.assistant, value);
         }
     }
 

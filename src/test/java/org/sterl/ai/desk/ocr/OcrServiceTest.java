@@ -6,7 +6,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.io.ClassPathResource;
+import org.sterl.ai.desk.config.AiDeskConfig;
 import org.sterl.ai.desk.metric.MetricService;
 import org.sterl.ai.desk.pdf.PdfDocument;
 
@@ -14,11 +14,18 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 class OcrServiceTest {
 
-    private OcrService subject = new OcrService(new MetricService(new SimpleMeterRegistry()));
+    private AiDeskConfig config = new AiDeskConfig();
+    private OcrService subject = new OcrService(
+            config,
+            new MetricService(new SimpleMeterRegistry()));
 
     @Test
-    void testOcrCreateTime() throws Exception {
-        System.err.println(new ClassPathResource("/Musterrechnung.pdf").getFile().getAbsoluteFile());
+    void test_hasDocker() throws Exception {
+        // GIVEN
+        config.setDocker("anyfoonotavailable docker");
+
+        // WHEN / THEN
+        assertThat(subject.hasDocker()).isFalse();
     }
     @Test
     void testOcr() throws Exception {

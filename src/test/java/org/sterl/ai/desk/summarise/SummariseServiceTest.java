@@ -114,7 +114,7 @@ public class SummariseServiceTest extends AbstractSpringTest {
     
     @Test
     void test_Musterrechnung_AI() throws Exception {
-        var llm = "gemma3:12b";
+        var llm = "mistralai/ministral-3-14b-reasoning";
         var images = PdfUtil.generateImages(HOTEL_STERN_MUSTER_RECHNUNG.getPdf(), 300);
         
         subject.setLlmModel(llm);

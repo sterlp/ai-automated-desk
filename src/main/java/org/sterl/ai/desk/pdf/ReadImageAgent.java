@@ -6,10 +6,10 @@ import java.util.List;
 
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 import org.sterl.ai.desk.shared.AIHelper;
@@ -23,8 +23,8 @@ import lombok.Setter;
 public class ReadImageAgent {
 
     @Setter
-    private String llmModel = "ministral-3:14b-instruct-2512-q8_0";
-    private final OllamaChatModel ollamaChat;
+    private String llmModel = "google/gemma-3-12b";
+    private final ChatModel chatModel;
     
     public AiResult<String> read(List<BufferedImage> images) {
         var media = images.stream()
@@ -49,13 +49,13 @@ public class ReadImageAgent {
 
         var message = UserMessage.builder().text("").media(media).build();
         var prompt = new Prompt(Arrays.asList(system, message),
-                OllamaChatOptions.builder()
+                ChatOptions.builder()
                     .model(llmModel)
-                    .temperature(0.5)
+                    .temperature(0.6)
                     .build());
         
         var time = System.currentTimeMillis();
-        var result = ollamaChat.call(prompt);
+        var result = chatModel.call(prompt);
         time = System.currentTimeMillis() - time;
         time = AIHelper.modelTime(result, time);
 

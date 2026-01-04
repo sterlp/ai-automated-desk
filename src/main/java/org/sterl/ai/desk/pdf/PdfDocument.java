@@ -105,9 +105,10 @@ public class PdfDocument implements Closeable {
         document.close();
     }
 
+    // Creator: OCRmyPDF 16.10.5.dev2+g74305e874.d20250805 / Tesseract OCR-hOCR 5.5.0
     public void set(DocumentInfo fileMetaData) {
         var info = document.getDocumentInformation();
-        if (Strings.notBlank(fileMetaData.getFrom())) info.setCreator(fileMetaData.getFrom());
+        if (Strings.notBlank(fileMetaData.getAuthor())) info.setAuthor(fileMetaData.getAuthor());
         if (Strings.notBlank(fileMetaData.getTitle())) info.setTitle(fileMetaData.getTitle());
         if (Strings.notBlank(fileMetaData.getSummary())) info.setSubject(fileMetaData.getSummary());
         

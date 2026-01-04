@@ -16,7 +16,7 @@ public class MetricService {
 
     private final MeterRegistry meterRegistry;
     
-    public SpringTimer timer(String name, Class<?> forClass) {
+    public SpringTimer start(String name, Class<?> forClass) {
         return new SpringTimer("ai-desk." + name, LoggerFactory.getLogger(forClass)).start();
     }
     
@@ -42,11 +42,9 @@ public class MetricService {
             log.info(message + " finished after {}ms", timeMs);
             return timeMs;
         }
-        
         public long stop() {
             return timeEnd(null);
         }
-
         private long timeEnd(Exception e) {
             var timeMs = System.currentTimeMillis() - startMs;
             meterRegistry.timer(name, "status", 

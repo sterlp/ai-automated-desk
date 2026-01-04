@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.support.ToolDefinitions;
@@ -110,13 +110,14 @@ class RagServiceTest extends AbstractSpringTest {
             .user("""
                 Welches Interface hat das embedding model?
                 """)
-            .options(OllamaChatOptions.builder()
-                .model("gpt-oss:latest")
-                .thinkMedium()
-                .build())
-            .call();
+            .options(OpenAiChatOptions.builder()
+                        .model("mistralai/ministral-3-14b-reasoning")
+                        //.model("gpt-oss:latest")
+                        .build())
+            .call()
+            .chatResponse();
         
-        String c = r.content();
-        System.err.println(c);
+        System.err.println(r.getResult().getOutput().getText());
+        System.err.println(r.getMetadata());
     }
 }
