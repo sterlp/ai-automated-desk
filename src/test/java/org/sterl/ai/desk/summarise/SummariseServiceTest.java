@@ -1,5 +1,7 @@
 package org.sterl.ai.desk.summarise;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -8,6 +10,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Stream;
+
+import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,8 +119,7 @@ public class SummariseServiceTest extends AbstractSpringTest {
     @Test
     void test_Musterrechnung_AI() throws Exception {
         var llm = "mistralai/ministral-3-14b-reasoning";
-        var images = PdfUtil.generateImages(HOTEL_STERN_MUSTER_RECHNUNG.getPdf(), 300);
-        
+        var images = PdfUtil.generateImages(HOTEL_STERN_MUSTER_RECHNUNG.getPdf());
         subject.setLlmModel(llm);
         var result = subject.summarise(images);
         System.err.println(result.result());

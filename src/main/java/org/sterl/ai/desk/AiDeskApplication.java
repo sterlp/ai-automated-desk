@@ -11,5 +11,4 @@ public class AiDeskApplication {
     public static void main(String[] args) {
         SpringApplication.run(AiDeskApplication.class, args);
     }
-
 }

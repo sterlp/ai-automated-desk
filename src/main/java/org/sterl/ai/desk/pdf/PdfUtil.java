@@ -10,7 +10,6 @@ import javax.imageio.ImageIO;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.ai.content.Media;
 import org.springframework.core.io.ByteArrayResource;
@@ -20,20 +19,24 @@ import org.springframework.util.MimeTypeUtils;
 
 public class PdfUtil {
 
-    public static List<BufferedImage> generateImages(ClassPathResource pdfResource, int dpi) {
+    public static List<BufferedImage> generateImages(ClassPathResource pdfResource) {
         try (var document = Loader.loadPDF(pdfResource.getContentAsByteArray())) {
-            return pdfToPng(document, dpi);
+            return pdfToPng(document);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-    
-    public static List<BufferedImage> pdfToPng(PDDocument document, int dpi) throws IOException {
+
+    public static List<BufferedImage> pdfToPng(PDDocument document) throws IOException {
+        return pdfToPng(document, 1.2f);
+    }
+
+    public static List<BufferedImage> pdfToPng(PDDocument document, float scale) throws IOException {
         var renderer = new PDFRenderer(document);
         var imageResources = new ArrayList<BufferedImage>();
 
         for (int page = 0; page < document.getNumberOfPages(); ++page) {
-            var bim = renderer.renderImageWithDPI(page, dpi, ImageType.RGB);
+            var bim = renderer.renderImage(page);
             imageResources.add(bim);
         }
         return imageResources;

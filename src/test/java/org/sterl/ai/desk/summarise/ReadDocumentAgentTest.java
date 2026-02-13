@@ -1,23 +1,13 @@
 package org.sterl.ai.desk.summarise;
 
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.reader.tika.TikaDocumentReader;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.PathResource;
 import org.sterl.ai.desk.AbstractSpringTest;
 import org.sterl.ai.desk.embedding.EmbeddingAgent;
 import org.sterl.ai.desk.pdf.PdfUtil;
@@ -38,7 +28,7 @@ class ReadDocumentAgentTest extends AbstractSpringTest {
         var sollVector = embeddingAgent.toVector(new String(musterrechnungMd.getContentAsByteArray()));
         
         var pdfResource = new ClassPathResource("/Musterrechnung_ocr.pdf");
-        var images = PdfUtil.generateImages(pdfResource, 300);
+        var images = PdfUtil.generateImages(pdfResource);
 
         System.out.println("gemma3:12b");
         subject.setLlmModel("gemma3:12b");
@@ -71,7 +61,7 @@ class ReadDocumentAgentTest extends AbstractSpringTest {
     void test_Musterrechnung_AI() throws Exception {
         var pdfResource = new ClassPathResource("/Musterrechnung_ocr.pdf");
         var musterrechnungMd = new ClassPathResource("musterrechnung.md");
-        var images = PdfUtil.generateImages(pdfResource, 300);
+        var images = PdfUtil.generateImages(pdfResource);
 
         var text = subject.read(images);
         System.err.println(text.result());
@@ -93,7 +83,7 @@ class ReadDocumentAgentTest extends AbstractSpringTest {
     @ValueSource(strings = {"gemma3:12b", "deepseek-ocr", "ministral-3:14b-instruct-2512-q8_0"})
     void test_LIDL_Rechnung_AI(String llm) throws Exception {
         var pdfResource = new ClassPathResource("/kassenzettel_lidl_ocr_done.pdf");
-        var images = PdfUtil.generateImages(pdfResource, 300);
+        var images = PdfUtil.generateImages(pdfResource);
 
         subject.setLlmModel(llm);
         subject.read(images);

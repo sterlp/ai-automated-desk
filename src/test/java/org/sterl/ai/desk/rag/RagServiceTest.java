@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.support.ToolDefinitions;
@@ -110,7 +110,7 @@ class RagServiceTest extends AbstractSpringTest {
             .user("""
                 Welches Interface hat das embedding model?
                 """)
-            .options(OpenAiChatOptions.builder()
+            .options(ChatOptions.builder()
                         .model("mistralai/ministral-3-14b-reasoning")
                         //.model("gpt-oss:latest")
                         .build())

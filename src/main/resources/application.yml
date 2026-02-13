@@ -11,29 +11,20 @@ spring:
         embedding-dimension: 1024
     chat:
       observations:
-        log-completion: true
-    openai:
-      base-url: http://localhost:1234
-      api-key: lm-studio
+        log-completion: false
+    ollama:
+      base-url: http://localhost:11434 # http://192.168.178.87:11434 #
       embedding:
-        options:
-          model: text-embedding-multilingual-e5-large-instruct
+        model: bge-m3:latest
       chat:
-        base-url: 
-#    ollama:
-#      base-url: http://localhost:11434 # http://192.168.178.87:11434 #
-#      embedding:
-#        model: bge-m3:latest
-#      chat:
-#        model: gemma3:12b # gemma3:4b # gemma3:4b qwen3 gemma3 llama3.1 granite3.3:8b gemma3:4b # gpt-oss:20b
-#      init:
-#        pull-model-strategy: always
-#        timeout: 300s
-#        max-retries: 1
-#        embedding:
-#          additional-models:
-#          - bge-m3:latest
-
+        model: gemma3:27b # gpt-oss:20b
+      init:
+        pull-model-strategy: always
+        timeout: 300s
+        max-retries: 1
+        embedding:
+          additional-models:
+          - bge-m3:latest
 ai-desk:
   docker: ws docker
 

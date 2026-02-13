@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.sterl.ai.desk.shared.MkDocksTable;
 
-@ActiveProfiles("junit")
+@ActiveProfiles("test")
 @SpringBootTest(classes = AiDeskApplication.class)
 public class AbstractSpringTest {
     
