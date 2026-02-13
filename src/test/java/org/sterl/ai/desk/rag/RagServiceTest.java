@@ -24,11 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 class RagServiceTest extends AbstractSpringTest {
 
     @Autowired
-    RagService ragService;
+    private RagService ragService;
     @Autowired
-    FileReadService fileReadService;
+    private FileReadService fileReadService;
     @Autowired
-    ChatClient.Builder chatBuilder;
+    private ChatClient.Builder chatBuilder;
     @Autowired
     private VectorStore vectorStore;
     
