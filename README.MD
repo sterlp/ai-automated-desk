@@ -76,3 +76,9 @@ done
 -   https://ollama.com/
 -   https://pdfbox.apache.org/
 -   https://spring.io/projects/spring-boot
+
+
+# Alternatives
+
+- https://github.com/clusterzx/paperless-ai
+- https://github.com/paperless-ngx/paperless-ngx
