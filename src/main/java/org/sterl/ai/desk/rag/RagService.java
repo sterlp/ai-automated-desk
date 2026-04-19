@@ -56,4 +56,36 @@ public class RagService {
             stream.close();
         }
     }
+
+    public void index(List<Document> docs, String folderId) {
+        for (Document doc : docs) {
+            doc.getMetadata().put("folder_id", folderId);
+
+            // delete old chunks by stable identifiers (source + folder_id)
+            // so changed files get their old chunks replaced, not duplicated
+            var source = doc.getMetadata().get("source");
+            if (source != null) {
+                ragRepository.delete(Map.of(
+                        "metadata.source", source,
+                        "metadata.folder_id", folderId));
+            }
+        }
+        index(docs);
+    }
+
+    public void index(Stream<List<Document>> stream, String folderId) {
+        try {
+            stream.forEach(docs -> index(docs, folderId));
+        } finally {
+            stream.close();
+        }
+    }
+
+    public int deleteDocumentsByFolderId(String folderId) {
+        return ragRepository.deleteDocumentsByFolderId(folderId);
+    }
+
+    public int countDocumentsByFolderId(String folderId) {
+        return ragRepository.countDocumentsByFolderId(folderId);
+    }
 }

@@ -408,12 +408,3 @@ public class PersonEntity {
     private Long id;
 }
 ```
-
----
-
-### Database conventions
-
-- **Tables:** Lowercase (`person`, `order_item`)
-- **Indexes:** Lowercase (`idx_person_email`)
-- **Columns:** Lowercase, snake_case
-- **Test DB:** H2 in-memory

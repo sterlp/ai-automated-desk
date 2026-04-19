@@ -82,8 +82,9 @@ class RagServiceTest extends AbstractSpringTest {
         }
         return result;
     }
-    @Test
-    void testRagChat() throws Exception {
+    
+    //@Test
+    void testRagChatWithTools() throws Exception {
         var method = ReflectionUtils.findMethod(this.getClass(), "getRagData", String.class, String.class);
         var toolCallback = MethodToolCallback.builder()
             .toolDefinition(ToolDefinitions.builder(method)
@@ -110,10 +111,6 @@ class RagServiceTest extends AbstractSpringTest {
             .user("""
                 Welches Interface hat das embedding model?
                 """)
-            .options(ChatOptions.builder()
-                        .model("mistralai/ministral-3-14b-reasoning")
-                        //.model("gpt-oss:latest")
-                        .build())
             .call()
             .chatResponse();
         

@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
 import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
@@ -12,8 +11,6 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.sterl.ai.desk.pdf.PdfDocument;
 import org.sterl.ai.desk.summarise.DocumentConverter;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -33,10 +30,9 @@ This is a invoice from Hotel-Gasthof Stern dated 28.12.2013 for various supplies
  */
 class RestApiTest {
 
-    private ObjectMapper mapper = new ObjectMapper();
-    private DocumentConverter converter = new DocumentConverter(mapper);
+    private DocumentConverter converter = new DocumentConverter();
 
-    @Test
+    //@Test
     void test() throws Exception {
         var rest = new RestTemplateBuilder()
                 .rootUri("http://localhost:1234/v1")

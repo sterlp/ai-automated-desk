@@ -1,7 +1,6 @@
 package org.sterl.ai.desk.summarise;
 
 import org.springframework.ai.converter.StructuredOutputConverter;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,19 +8,19 @@ import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
 
 @Component
 public class DocumentConverter implements StructuredOutputConverter<DocumentInfo> {
-    
+
     private final ObjectMapper mapper;
     private final JsonSchemaGenerator schemaGenerator;
-    
 
-    public DocumentConverter(ObjectMapper mapper) {
+
+    public DocumentConverter() {
         super();
-        this.mapper = mapper;
+        this.mapper = new ObjectMapper();
         this.schemaGenerator = new JsonSchemaGenerator(mapper);
     }
 
     @Override
-    public DocumentInfo convert(@NonNull String source) {
+    public DocumentInfo convert(@org.jspecify.annotations.NonNull String source) {
         try {
             return mapper.readValue(source, DocumentInfo.class);
         } catch (Exception e) {
